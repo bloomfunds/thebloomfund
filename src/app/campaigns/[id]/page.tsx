@@ -1162,7 +1162,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                     {campaign.reward_tiers &&
                     campaign.reward_tiers.length > 0 ? (
                       campaign.reward_tiers
-                        .sort((a, b) => a.display_order - b.display_order)
+                        .sort((a: import("@/lib/supabase").RewardTier, b: import("@/lib/supabase").RewardTier) => a.display_order - b.display_order)
                         .map((tier, index) => {
                           const isPopular = index === 1;
                           const rewardImages = [
