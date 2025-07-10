@@ -2,10 +2,34 @@ import { createClient } from "@supabase/supabase-js";
 import { Database } from "../types/supabase";
 
 // Initialize Supabase client with environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Create a mock client for development when environment variables are not set
+const createMockClient = () => {
+  return {
+    auth: {
+      signUp: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+      signInWithPassword: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+      signOut: async () => ({ error: null }),
+      getUser: async () => ({ data: { user: null }, error: null }),
+      resetPasswordForEmail: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+      signInWithOAuth: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
+    from: () => ({
+      select: () => ({ eq: () => ({ single: async () => ({ data: null, error: { message: "Supabase not configured" } }) }) }),
+      insert: async () => ({ error: { message: "Supabase not configured" } }),
+    }),
+    channel: () => ({
+      on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+    }),
+  } as any;
+};
+
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient<Database>(supabaseUrl, supabaseAnonKey)
+  : createMockClient();
 
 // Mock types for development
 export interface Campaign {
