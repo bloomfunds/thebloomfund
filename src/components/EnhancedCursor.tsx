@@ -229,7 +229,7 @@ export default function EnhancedCursor({ className }: EnhancedCursorProps) {
           target.hasAttribute("data-interactive") ||
           window.getComputedStyle(target).cursor === "pointer";
 
-        setIsHovering(isInteractive);
+        setIsHovering(Boolean(isInteractive));
       } catch (error) {
         // Silently handle mouse over errors
       }
