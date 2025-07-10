@@ -1163,7 +1163,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                     campaign.reward_tiers.length > 0 ? (
                       campaign.reward_tiers
                         .sort((a: import("@/lib/supabase").RewardTier, b: import("@/lib/supabase").RewardTier) => a.display_order - b.display_order)
-                        .map((tier, index) => {
+                        .map((tier: import("@/lib/supabase").RewardTier, index) => {
                           const isPopular = index === 1;
                           const rewardImages = [
                             "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=300&q=80",
