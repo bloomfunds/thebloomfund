@@ -276,6 +276,36 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      },
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: string;
+          title: string;
+          message: string;
+          metadata: Record<string, any> | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: string;
+          title: string;
+          message: string;
+          metadata?: Record<string, any> | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          type?: string;
+          title?: string;
+          message?: string;
+          metadata?: Record<string, any> | null;
+          created_at?: string;
+        };
+        Relationships: [];
       }
     }
     Views: {
