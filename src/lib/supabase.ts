@@ -106,14 +106,13 @@ export async function signUp(
   }
 
   // Create user profile in public.users table
-  if (data.user) {
+  if (data.user && data.user.id && data.user.email) {
     const { error: profileError } = await supabase.from("users").insert({
       id: data.user.id,
       email: data.user.email,
       full_name: fullName,
       avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
     });
-
     if (profileError) {
       console.error("Error creating user profile:", profileError);
     }
