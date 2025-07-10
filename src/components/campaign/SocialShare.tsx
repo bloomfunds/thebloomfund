@@ -250,7 +250,7 @@ export default function SocialShare({ campaign, className }: SocialShareProps) {
           </div>
 
           {/* Native Share (Mobile) */}
-          {typeof navigator !== "undefined" && navigator.share && (
+          {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
             <Button
               onClick={handleNativeShare}
               className="w-full premium-button"
