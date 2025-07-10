@@ -39,6 +39,7 @@ import {
   Mail,
   Phone,
   MessageCircle,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 
