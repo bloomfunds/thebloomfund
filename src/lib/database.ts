@@ -758,6 +758,12 @@ export async function getPlatformStats() {
 // Real-time subscription setup
 export function subscribeToRealTimeUpdates(callback: (payload: any) => void) {
   try {
+    // Check if Supabase is properly configured
+    if (!supabase || typeof window === "undefined" || !window.location) {
+      console.warn("Supabase not configured or not in browser, using mock real-time updates");
+      return createMockRealTimeSubscription(callback);
+    }
+
     const subscription = supabase
       .channel("campaigns-changes")
       .on(
@@ -769,13 +775,50 @@ export function subscribeToRealTimeUpdates(callback: (payload: any) => void) {
         },
         callback,
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        console.log("Real-time subscription status:", status);
+        if (status === "CHANNEL_ERROR") {
+          console.warn("Real-time subscription failed, falling back to mock");
+          return createMockRealTimeSubscription(callback);
+        }
+      });
 
     return subscription;
   } catch (error) {
     console.error("Error setting up real-time subscription:", error);
-    return null;
+    return createMockRealTimeSubscription(callback);
   }
+}
+
+// Mock real-time subscription for development/testing
+function createMockRealTimeSubscription(callback: (payload: any) => void) {
+  console.log("Creating mock real-time subscription");
+  
+  // Simulate real-time updates every 30 seconds
+  const interval = setInterval(() => {
+    const mockUpdate = {
+      eventType: "UPDATE",
+      new: {
+        id: mockCampaigns[0]?.id,
+        current_funding: Math.floor(Math.random() * 10000) + 1000,
+        updated_at: new Date().toISOString(),
+      },
+      old: {
+        id: mockCampaigns[0]?.id,
+        current_funding: mockCampaigns[0]?.current_funding,
+      },
+    };
+    
+    callback(mockUpdate);
+  }, 30000);
+
+  // Return a cleanup function
+  return {
+    unsubscribe: () => {
+      clearInterval(interval);
+      console.log("Mock real-time subscription cleaned up");
+    },
+  };
 }
 
 // Enhanced analytics functions
