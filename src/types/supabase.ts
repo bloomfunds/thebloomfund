@@ -306,6 +306,33 @@ export type Database = {
           created_at?: string;
         };
         Relationships: [];
+      },
+      campaign_updates: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          title: string;
+          content: string;
+          is_public: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          title: string;
+          content: string;
+          is_public: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          campaign_id?: string;
+          title?: string;
+          content?: string;
+          is_public?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
       }
     }
     Views: {
