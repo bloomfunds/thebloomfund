@@ -431,7 +431,7 @@ export default function HomePage() {
           status: "active",
           limit: 3,
         });
-        setFeaturedCampaigns(campaigns);
+        setFeaturedCampaigns((campaigns as Campaign[]).filter(c => c.owner_id !== null));
       } catch (error) {
         console.error("Error fetching campaigns:", error);
         setFeaturedCampaigns([]);
