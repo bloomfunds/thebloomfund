@@ -30,6 +30,7 @@ import Link from "next/link";
 import { getCampaigns } from "@/lib/database";
 import TestimonialCarousel from "@/components/ui/testimonial-carousel";
 import CampaignFullyFundedPopup from "@/components/CampaignFullyFundedPopup";
+import { Campaign } from "@/lib/supabase";
 
 // Typewriter component
 function TypewriterText({ isMounted }: { isMounted: boolean }) {
@@ -414,7 +415,7 @@ function FloatingIcons() {
 // Main HomePage component
 export default function HomePage() {
   const [isMounted, setIsMounted] = useState(false);
-  const [featuredCampaigns, setFeaturedCampaigns] = useState([]);
+  const [featuredCampaigns, setFeaturedCampaigns] = useState<Campaign[]>([]);
   const [showFundedPopup, setShowFundedPopup] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
 
