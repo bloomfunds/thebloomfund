@@ -264,7 +264,7 @@ export type Database = {
           created_at?: string | null
           email: string
           full_name?: string | null
-          id: string
+          id?: string
           updated_at?: string | null
         }
         Update: {
