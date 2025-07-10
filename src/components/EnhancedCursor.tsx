@@ -62,9 +62,9 @@ export default function EnhancedCursor({ className }: EnhancedCursorProps) {
     }
 
     // Use requestAnimationFrame for better timing
-    let rafId: number;
+    let rafId: number | undefined;
     let mediaQueryCleanup: (() => void) | undefined;
-    let initTimeout: NodeJS.Timeout;
+    let initTimeout: ReturnType<typeof setTimeout>;
 
     const initializeCursor = () => {
       // Wait for complete hydration and DOM ready
@@ -151,7 +151,7 @@ export default function EnhancedCursor({ className }: EnhancedCursorProps) {
     return () => {
       mountedRef.current = false;
       if (cleanup) cleanup();
-      if (rafId && window?.cancelAnimationFrame) {
+      if (typeof rafId !== 'undefined' && window?.cancelAnimationFrame) {
         cancelAnimationFrame(rafId);
       }
       if (mediaQueryCleanup) {
