@@ -680,6 +680,12 @@ export async function searchCampaigns({
     const aValue = a[sortBy as keyof Campaign];
     const bValue = b[sortBy as keyof Campaign];
 
+    // Handle undefined values by treating them as empty string or 0 for comparison
+    // If both are undefined, treat as equal
+    if (aValue === undefined && bValue === undefined) return 0;
+    if (aValue === undefined) return sortOrder === "asc" ? 1 : -1;
+    if (bValue === undefined) return sortOrder === "asc" ? -1 : 1;
+
     if (sortOrder === "asc") {
       return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
     } else {
