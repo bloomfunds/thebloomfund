@@ -84,7 +84,12 @@ export default function PledgeTracking({
               : undefined,
         },
       }));
-      setPledges(pledgesWithRewards);
+      setPledges(
+        pledgesWithRewards.map((pledge) => ({
+          ...pledge,
+          status: pledge.status === "cancelled" ? "failed" : pledge.status,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching pledges:", error);
     } finally {
