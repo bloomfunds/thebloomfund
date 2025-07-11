@@ -70,6 +70,11 @@ type FormData = {
     description: string;
     image?: string;
   }[];
+  milestones: {
+    title: string;
+    description: string;
+    targetAmount: number;
+  }[];
   media: {
     type: "image" | "video";
     url: string;
@@ -89,6 +94,7 @@ const defaultFormData: FormData = {
   minContribution: 10,
   campaignDeadline: addDays(new Date(), 30),
   rewardTiers: [],
+  milestones: [],
   media: [],
 };
 
@@ -122,6 +128,12 @@ const steps = [
     title: "Reward Tiers",
     description: "Create reward tiers for your supporters",
     icon: Gift,
+  },
+  {
+    id: "milestones",
+    title: "Campaign Milestones",
+    description: "Set funding milestones to track progress",
+    icon: Target,
   },
   {
     id: "review",
@@ -279,6 +291,36 @@ export default function CampaignForm() {
     setFormData({ ...formData, rewardTiers: updatedTiers });
   };
 
+  const addMilestone = () => {
+    setFormData((prev) => ({
+      ...prev,
+      milestones: [
+        ...prev.milestones,
+        {
+          title: "",
+          description: "",
+          targetAmount: 0,
+        },
+      ],
+    }));
+  };
+
+  const updateMilestone = (index: number, field: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      milestones: prev.milestones.map((milestone, i) =>
+        i === index ? { ...milestone, [field]: value } : milestone
+      ),
+    }));
+  };
+
+  const removeMilestone = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      milestones: prev.milestones.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleFormSubmit = async () => {
     if (!currentUser) {
       setFormErrors(["You must be signed in to create a campaign."]);
@@ -358,6 +400,21 @@ export default function CampaignForm() {
         }));
 
         await createCampaignMediaBatch(campaign.id, mediaData);
+      }
+
+      // Create campaign milestones
+      if (formData.milestones.length > 0) {
+        const milestonesData = formData.milestones
+          .filter((milestone) => milestone.title.trim() && milestone.targetAmount > 0)
+          .map((milestone) => ({
+            title: milestone.title.trim(),
+            description: milestone.description.trim() || milestone.title.trim(),
+            target_amount: Math.round(milestone.targetAmount),
+          }));
+
+        if (milestonesData.length > 0) {
+          await createCampaignMilestones(campaign.id, milestonesData);
+        }
       }
 
       setSubmitSuccess(true);
@@ -967,6 +1024,129 @@ export default function CampaignForm() {
                               </div>
                             )}
                           </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {currentStepData.id === "milestones" && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-semibold">Campaign Milestones</h3>
+                    <p className="text-muted-foreground">
+                      Set funding milestones to track progress and engage backers
+                      (Optional)
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addMilestone}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Milestone
+                  </Button>
+                </div>
+
+                {formData.milestones.length === 0 ? (
+                  <Card className="p-8 text-center border-dashed border-2">
+                    <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="font-semibold text-lg mb-2">
+                      No milestones yet
+                    </h4>
+                    <p className="text-muted-foreground mb-4">
+                      Milestones help track progress and keep backers engaged
+                    </p>
+                    <Button onClick={addMilestone} variant="outline">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Your First Milestone
+                    </Button>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {formData.milestones.map((milestone, index) => (
+                      <Card key={index} className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <h4 className="font-semibold text-lg">
+                            Milestone {index + 1}
+                          </h4>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeMilestone(index)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <Label
+                              htmlFor={`milestoneTitle-${index}`}
+                              className="font-medium"
+                            >
+                              Title
+                            </Label>
+                            <Input
+                              id={`milestoneTitle-${index}`}
+                              value={milestone.title}
+                              onChange={(e) =>
+                                updateMilestone(index, "title", e.target.value)
+                              }
+                              placeholder="e.g., 50% Funded"
+                              className="h-10"
+                            />
+                          </div>
+                          <div>
+                            <Label
+                              htmlFor={`milestoneAmount-${index}`}
+                              className="font-medium"
+                            >
+                              Target Amount ($)
+                            </Label>
+                            <Input
+                              id={`milestoneAmount-${index}`}
+                              type="number"
+                              min="1"
+                              value={milestone.targetAmount || ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === "" || value === "0") {
+                                  updateMilestone(index, "targetAmount", 0);
+                                } else {
+                                  updateMilestone(index, "targetAmount", Number(value));
+                                }
+                              }}
+                              className="h-10"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label
+                            htmlFor={`milestoneDescription-${index}`}
+                            className="font-medium"
+                          >
+                            Description
+                          </Label>
+                          <Textarea
+                            id={`milestoneDescription-${index}`}
+                            value={milestone.description}
+                            onChange={(e) =>
+                              updateMilestone(
+                                index,
+                                "description",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Describe what this milestone means and what happens when it's reached"
+                            className="min-h-[80px]"
+                          />
                         </div>
                       </Card>
                     ))}

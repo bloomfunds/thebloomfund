@@ -1,7 +1,8 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { notFound } from "next/navigation";
 import { getCampaignById } from "@/lib/database";
+import { supabase } from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,11 +51,18 @@ interface CampaignPageProps {
 }
 
 export default function CampaignPage({ params }: CampaignPageProps) {
-  const [campaign, setCampaign] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const [campaign, setCampaign] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [milestones, setMilestones] = useState<any[]>([]);
+  const [campaignStats, setCampaignStats] = useState({
+    totalBackers: 0,
+    totalAmount: 0,
+    fundingPercentage: 0,
+    daysRemaining: 0
+  });
 
-  React.useEffect(() => {
+  useEffect(() => {
     async function fetchCampaign() {
       try {
         const campaignData = await getCampaignById(params.id);
@@ -73,6 +81,56 @@ export default function CampaignPage({ params }: CampaignPageProps) {
 
     fetchCampaign();
   }, [params.id]);
+
+  useEffect(() => {
+    if (!campaign) return;
+
+    const fetchMilestones = async () => {
+      try {
+        const { data: milestonesData } = await supabase
+          .from('campaign_milestones')
+          .select('*')
+          .eq('campaign_id', campaign.id)
+          .order('target_amount', { ascending: true });
+
+        setMilestones(milestonesData || []);
+      } catch (error) {
+        console.error('Error fetching milestones:', error);
+      }
+    };
+
+    const fetchCampaignStats = async () => {
+      try {
+        // Get total backers and amount from payments
+        const { data: paymentsData } = await supabase
+          .from('payments')
+          .select('amount')
+          .eq('campaign_id', campaign.id)
+          .eq('status', 'succeeded');
+
+        const totalAmount = paymentsData?.reduce((sum: number, payment: any) => sum + Number(payment.amount), 0) || 0;
+        const totalBackers = paymentsData?.length || 0;
+        const fundingPercentage = campaign.funding_goal > 0 ? Math.round((totalAmount / campaign.funding_goal) * 100) : 0;
+        
+        // Calculate days remaining
+        const endDate = new Date(campaign.end_date);
+        const today = new Date();
+        const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+
+        setCampaignStats({
+          totalBackers,
+          totalAmount,
+          fundingPercentage,
+          daysRemaining
+        });
+      } catch (error) {
+        console.error('Error fetching campaign stats:', error);
+      }
+    };
+
+    fetchMilestones();
+    fetchCampaignStats();
+  }, [campaign]);
 
   if (loading) {
     return (
@@ -106,112 +164,119 @@ export default function CampaignPage({ params }: CampaignPageProps) {
     );
   }
 
-  try {
-    // Override with specific funding statistics as requested
-    const currentFunding = 1200000; // $1.2M
-    const fundingGoal = 300000; // $300K
-    const backerCount = 1267;
-    const daysRemaining = 0;
-    const fundingPercentage = 400; // 400% funded (over-funded)
+  // Professional campaign updates
+  const campaignUpdates = [
+    {
+      id: 1,
+      title: "Campaign Successfully Completed - 400% Funded!",
+      content:
+        "We are overwhelmed by the incredible support from our community. With $1.2M raised against our $300K goal, we can now expand our vision and deliver even more value to our backers.",
+      date: "2024-01-20",
+      author: campaign?.owner_name,
+    },
+    {
+      id: 2,
+      title: "Production Timeline & Next Steps",
+      content:
+        "With funding complete, we're moving into full production mode. Our team is working around the clock to ensure timely delivery while maintaining the highest quality standards.",
+      date: "2024-01-18",
+      author: campaign?.owner_name,
+    },
+    {
+      id: 3,
+      title: "Thank You to Our Amazing Community",
+      content:
+        "The response has been incredible. We're grateful for every single backer who believed in our vision and helped make this dream a reality.",
+      date: "2024-01-15",
+      author: campaign?.owner_name,
+    },
+  ];
 
-    // Professional campaign updates
-    const campaignUpdates = [
-      {
-        id: 1,
-        title: "Campaign Successfully Completed - 400% Funded!",
-        content:
-          "We are overwhelmed by the incredible support from our community. With $1.2M raised against our $300K goal, we can now expand our vision and deliver even more value to our backers.",
-        date: "2024-01-20",
-        author: campaign.owner_name,
-      },
-      {
-        id: 2,
-        title: "Production Timeline & Next Steps",
-        content:
-          "With funding complete, we're moving into full production mode. Our team is working around the clock to ensure timely delivery while maintaining the highest quality standards.",
-        date: "2024-01-18",
-        author: campaign.owner_name,
-      },
-      {
-        id: 3,
-        title: "Thank You to Our Amazing Community",
-        content:
-          "The response has been incredible. We're grateful for every single backer who believed in our vision and helped make this dream a reality.",
-        date: "2024-01-15",
-        author: campaign.owner_name,
-      },
-    ];
+  // Related campaigns
+  const relatedCampaigns = [
+    {
+      id: 2,
+      title: "Sustainable Tech Innovation Hub",
+      current_funding: 850000,
+      funding_goal: 500000,
+      cover_image:
+        "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&q=80",
+      category: "Technology",
+      backers: 892,
+      daysLeft: 12,
+    },
+    {
+      id: 3,
+      title: "Green Energy Solutions Platform",
+      current_funding: 420000,
+      funding_goal: 350000,
+      cover_image:
+        "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=400&q=80",
+      category: "Environment",
+      backers: 634,
+      daysLeft: 8,
+    },
+    {
+      id: 4,
+      title: "Community Development Initiative",
+      current_funding: 180000,
+      funding_goal: 200000,
+      cover_image:
+        "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&q=80",
+      category: "Community",
+      backers: 456,
+      daysLeft: 15,
+    },
+  ];
 
-    // Related campaigns
-    const relatedCampaigns = [
-      {
-        id: 2,
-        title: "Sustainable Tech Innovation Hub",
-        current_funding: 850000,
-        funding_goal: 500000,
-        cover_image:
-          "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&q=80",
-        category: "Technology",
-        backers: 892,
-        daysLeft: 12,
-      },
-      {
-        id: 3,
-        title: "Green Energy Solutions Platform",
-        current_funding: 420000,
-        funding_goal: 350000,
-        cover_image:
-          "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=400&q=80",
-        category: "Environment",
-        backers: 634,
-        daysLeft: 8,
-      },
-      {
-        id: 4,
-        title: "Community Development Initiative",
-        current_funding: 180000,
-        funding_goal: 200000,
-        cover_image:
-          "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&q=80",
-        category: "Community",
-        backers: 456,
-        daysLeft: 15,
-      },
-    ];
-
-    // Key milestones
-    const keyMilestones = [
-      {
-        title: "Project Conception",
-        description: "Initial idea development and market research",
-        date: "Q1 2023",
-        completed: true,
-      },
-      {
-        title: "Prototype Development",
-        description: "First working prototype and testing phase",
-        date: "Q3 2023",
-        completed: true,
-      },
-      {
-        title: "Campaign Launch",
-        description: "Public crowdfunding campaign launch",
-        date: "Q4 2023",
-        completed: true,
-      },
-      {
-        title: "Production Phase",
-        description: "Full-scale production and quality assurance",
-        date: "Q1 2024",
-        completed: false,
-      },
-      {
-        title: "Market Launch",
-        description: "Product delivery and market introduction",
-        date: "Q2 2024",
-        completed: false,
-      },
-    ];
+  // Default milestones if none exist
+  const keyMilestones = milestones.length > 0 ? milestones.map((milestone: any) => ({
+    title: milestone.title,
+    description: milestone.description || `Reach $${milestone.target_amount.toLocaleString()} in funding`,
+    date: new Date(milestone.created_at).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short' 
+    }),
+    completed: milestone.is_reached,
+    targetAmount: milestone.target_amount
+  })) : [
+    {
+      title: "Campaign Launch",
+      description: "Campaign goes live and starts accepting pledges",
+      date: campaign ? new Date(campaign.start_date).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short' 
+      }) : "In Progress",
+      completed: true,
+    },
+    {
+      title: "25% Funded",
+      description: "First major milestone reached",
+      date: "In Progress",
+      completed: campaignStats.fundingPercentage >= 25,
+    },
+    {
+      title: "50% Funded",
+      description: "Halfway to the goal",
+      date: "In Progress", 
+      completed: campaignStats.fundingPercentage >= 50,
+    },
+    {
+      title: "100% Funded",
+      description: "Campaign goal achieved",
+      date: "In Progress",
+      completed: campaignStats.fundingPercentage >= 100,
+    },
+    {
+      title: "Campaign Ends",
+      description: "Funding period concludes",
+      date: campaign ? new Date(campaign.end_date).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short' 
+      }) : "In Progress",
+      completed: campaignStats.daysRemaining <= 0,
+    },
+  ];
 
     return (
       <div className="min-h-screen bg-white">
@@ -342,15 +407,15 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                       <div className="text-center">
                         <div className="text-2xl lg:text-3xl font-black mb-2 text-green-400">
-                          $1.2M
+                          ${(campaignStats.totalAmount / 1000).toFixed(0)}K
                         </div>
                         <div className="text-gray-300 font-semibold text-sm">
-                          raised of $300K goal
+                          raised of ${(campaign.funding_goal / 1000).toFixed(0)}K goal
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl lg:text-3xl font-black mb-2 text-white">
-                          1,267
+                          {campaignStats.totalBackers.toLocaleString()}
                         </div>
                         <div className="text-gray-300 font-semibold text-sm">
                           backers
@@ -358,7 +423,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                       </div>
                       <div className="text-center">
                         <div className="text-2xl lg:text-3xl font-black mb-2 text-gray-400">
-                          0
+                          {campaignStats.daysRemaining}
                         </div>
                         <div className="text-gray-300 font-semibold text-sm">
                           days left
@@ -366,7 +431,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                       </div>
                       <div className="text-center">
                         <div className="text-2xl lg:text-3xl font-black mb-2 text-green-400">
-                          400%
+                          {campaignStats.fundingPercentage}%
                         </div>
                         <div className="text-gray-300 font-semibold text-sm">
                           funded
@@ -381,17 +446,20 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                           Funding Progress
                         </span>
                         <span className="text-sm font-bold text-green-400">
-                          400% Complete
+                          {campaignStats.fundingPercentage}% Complete
                         </span>
                       </div>
                       <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full w-full relative">
+                        <div 
+                          className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full relative"
+                          style={{ width: `${Math.min(campaignStats.fundingPercentage, 100)}%` }}
+                        >
                           <div className="absolute inset-0 bg-white/20 animate-pulse" />
                         </div>
                       </div>
                       <div className="flex justify-between text-xs text-gray-400 mt-2">
-                        <span>Started 1/31/2024</span>
-                        <span>Completed 4/30/2024</span>
+                        <span>Started {campaign ? new Date(campaign.start_date).toLocaleDateString() : 'N/A'}</span>
+                        <span>Ends {campaign ? new Date(campaign.end_date).toLocaleDateString() : 'N/A'}</span>
                       </div>
                     </div>
                   </div>
@@ -1295,7 +1363,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                 </Card>
 
                 {/* Campaign Timeline */}
-                <Card className="border-0 shadow-xl rounded-2xl sticky top-[520px]">
+                <Card className="border-0 shadow-xl rounded-2xl sticky top-8">
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-3 text-xl font-black text-gray-900">
                       <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -1359,13 +1427,13 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="text-center p-3 bg-green-50 rounded-lg">
                           <div className="text-lg font-black text-green-600">
-                            400%
+                            {campaignStats.fundingPercentage}%
                           </div>
                           <div className="text-xs text-gray-600">Funded</div>
                         </div>
                         <div className="text-center p-3 bg-blue-50 rounded-lg">
                           <div className="text-lg font-black text-blue-600">
-                            1,267
+                            {campaignStats.totalBackers.toLocaleString()}
                           </div>
                           <div className="text-xs text-gray-600">Backers</div>
                         </div>
@@ -1384,8 +1452,4 @@ export default function CampaignPage({ params }: CampaignPageProps) {
         </div>
       </div>
     );
-  } catch (error) {
-    console.error("Error loading campaign:", error);
-    notFound();
-  }
 }
