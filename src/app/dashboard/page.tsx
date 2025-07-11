@@ -153,7 +153,7 @@ export default function DashboardPage() {
     );
   }
 
-  const totalFunding = campaigns.reduce((sum, campaign) => sum + campaign.current_funding, 0);
+  const totalFunding = campaigns.reduce((sum, campaign) => sum + (campaign.current_funding || 0), 0);
   const totalGoal = campaigns.reduce((sum, campaign) => sum + campaign.funding_goal, 0);
   const activeCampaigns = campaigns.filter(c => c.status === 'active').length;
 
@@ -284,9 +284,9 @@ export default function DashboardPage() {
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span>Progress</span>
-                            <span>{formatCurrency(campaign.current_funding)} / {formatCurrency(campaign.funding_goal)}</span>
+                            <span>{formatCurrency(campaign.current_funding || 0)} / {formatCurrency(campaign.funding_goal)}</span>
                           </div>
-                          <Progress value={calculateProgress(campaign.current_funding, campaign.funding_goal)} />
+                          <Progress value={calculateProgress(campaign.current_funding || 0, campaign.funding_goal)} />
                         </div>
                         
                         <div className="flex justify-between items-center text-sm text-muted-foreground">
@@ -336,7 +336,7 @@ export default function DashboardPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="flex justify-between items-center">
-                          <span>Final Funding: {formatCurrency(campaign.current_funding)}</span>
+                          <span>Final Funding: {formatCurrency(campaign.current_funding || 0)}</span>
                           <Badge variant="secondary">Completed</Badge>
                         </div>
                       </CardContent>
