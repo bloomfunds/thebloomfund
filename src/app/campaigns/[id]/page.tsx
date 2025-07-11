@@ -346,7 +346,29 @@ export default function CampaignPage({ params }: CampaignPageProps) {
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-4">
-                  <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-bold rounded-xl">
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-bold rounded-xl"
+                    onClick={() => {
+                      // Store pledge intent for general support
+                      const pledgeIntent = {
+                        campaignId: campaign.id,
+                        campaignTitle: campaign.title,
+                        tierId: null,
+                        tierTitle: 'General Support',
+                        amount: 0, // Will be set by user
+                        timestamp: new Date().toISOString()
+                      };
+                      localStorage.setItem('pledgeIntent', JSON.stringify(pledgeIntent));
+                      
+                      // Scroll to rewards section or redirect to payment
+                      const rewardsSection = document.querySelector('[data-rewards-section]');
+                      if (rewardsSection) {
+                        rewardsSection.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = `/payment?campaign=${campaign.id}&amount=0`;
+                      }
+                    }}
+                  >
                     <Heart className="w-5 h-5 mr-2" />
                     Support This Project
                   </Button>
@@ -373,20 +395,38 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                     variant="outline"
                     className="border-white/30 text-white hover:bg-white/10 px-6 py-4 rounded-xl bg-white/5 backdrop-blur-sm"
                     onClick={() => {
-                      const saved =
-                        localStorage.getItem("savedCampaigns") || "[]";
+                      const saved = localStorage.getItem("savedCampaigns") || "[]";
                       const savedCampaigns = JSON.parse(saved);
                       if (!savedCampaigns.includes(campaign.id)) {
                         savedCampaigns.push(campaign.id);
-                        localStorage.setItem(
-                          "savedCampaigns",
-                          JSON.stringify(savedCampaigns),
-                        );
-                        alert("Campaign saved for later!");
+                        localStorage.setItem("savedCampaigns", JSON.stringify(savedCampaigns));
+                        // Show success toast instead of alert
+                        const button = document.querySelector('[data-save-button]') as HTMLButtonElement;
+                        if (button) {
+                          const originalText = button.innerHTML;
+                          button.innerHTML = '<CheckCircle className="w-5 h-5 mr-2" />Saved!';
+                          button.classList.add('bg-green-500', 'border-green-500');
+                          setTimeout(() => {
+                            button.innerHTML = originalText;
+                            button.classList.remove('bg-green-500', 'border-green-500');
+                          }, 2000);
+                        }
                       } else {
-                        alert("Campaign already saved!");
+                        // Remove from saved
+                        const updatedCampaigns = savedCampaigns.filter((id: string) => id !== campaign.id);
+                        localStorage.setItem("savedCampaigns", JSON.stringify(updatedCampaigns));
+                        const button = document.querySelector('[data-save-button]') as HTMLButtonElement;
+                        if (button) {
+                          const originalText = button.innerHTML;
+                          button.innerHTML = '<Bookmark className="w-5 h-5 mr-2" />Save for Later';
+                          button.classList.remove('bg-green-500', 'border-green-500');
+                          setTimeout(() => {
+                            button.innerHTML = originalText;
+                          }, 2000);
+                        }
                       }
                     }}
+                    data-save-button
                   >
                     <Bookmark className="w-5 h-5 mr-2" />
                     Save for Later
@@ -1214,7 +1254,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
               {/* Right Sidebar */}
               <div className="space-y-8">
                 {/* Available Rewards */}
-                <Card className="border-0 shadow-xl rounded-2xl sticky top-8">
+                <Card className="border-0 shadow-xl rounded-2xl sticky top-8" data-rewards-section>
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-3 text-xl font-black text-gray-900">
                       <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
@@ -1335,6 +1375,21 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                                     ? "bg-green-500 hover:bg-green-600 text-white"
                                     : "bg-gray-900 hover:bg-black text-white"
                                 }`}
+                                onClick={() => {
+                                  // Store pledge intent in localStorage
+                                  const pledgeIntent = {
+                                    campaignId: campaign.id,
+                                    campaignTitle: campaign.title,
+                                    tierId: tier.id,
+                                    tierTitle: tier.title,
+                                    amount: tier.amount,
+                                    timestamp: new Date().toISOString()
+                                  };
+                                  localStorage.setItem('pledgeIntent', JSON.stringify(pledgeIntent));
+                                  
+                                  // Redirect to payment page or show payment modal
+                                  window.location.href = `/payment?campaign=${campaign.id}&tier=${tier.id}&amount=${tier.amount}`;
+                                }}
                               >
                                 <Heart className="w-4 h-4 mr-2" />
                                 Pledge ${(tier.amount / 100).toFixed(0)}
@@ -1353,7 +1408,24 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                         <p className="text-gray-600 text-sm mb-4">
                           Support this project with any amount!
                         </p>
-                        <Button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 font-semibold rounded-lg">
+                        <Button 
+                          className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 font-semibold rounded-lg"
+                          onClick={() => {
+                            // Store pledge intent for general support
+                            const pledgeIntent = {
+                              campaignId: campaign.id,
+                              campaignTitle: campaign.title,
+                              tierId: null,
+                              tierTitle: 'General Support',
+                              amount: 0, // Will be set by user
+                              timestamp: new Date().toISOString()
+                            };
+                            localStorage.setItem('pledgeIntent', JSON.stringify(pledgeIntent));
+                            
+                            // Redirect to payment page
+                            window.location.href = `/payment?campaign=${campaign.id}&amount=0`;
+                          }}
+                        >
                           <Heart className="w-4 h-4 mr-2" />
                           Support Now
                         </Button>
@@ -1363,7 +1435,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                 </Card>
 
                 {/* Campaign Timeline */}
-                <Card className="border-0 shadow-xl rounded-2xl sticky top-8">
+                <Card className="border-0 shadow-xl rounded-2xl sticky top-[400px]">
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-3 text-xl font-black text-gray-900">
                       <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -1440,7 +1512,42 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                       </div>
                     </div>
 
-                    <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg">
+                    <Button 
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg"
+                      onClick={() => {
+                        const followed = localStorage.getItem("followedCampaigns") || "[]";
+                        const followedCampaigns = JSON.parse(followed);
+                        if (!followedCampaigns.includes(campaign.id)) {
+                          followedCampaigns.push(campaign.id);
+                          localStorage.setItem("followedCampaigns", JSON.stringify(followedCampaigns));
+                          // Show success feedback
+                          const button = document.querySelector('[data-follow-button]') as HTMLButtonElement;
+                          if (button) {
+                            const originalText = button.innerHTML;
+                            button.innerHTML = '<CheckCircle className="w-4 h-4 mr-2" />Following';
+                            button.classList.add('bg-green-600', 'hover:bg-green-700');
+                            setTimeout(() => {
+                              button.innerHTML = originalText;
+                              button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                            }, 2000);
+                          }
+                        } else {
+                          // Unfollow
+                          const updatedCampaigns = followedCampaigns.filter((id: string) => id !== campaign.id);
+                          localStorage.setItem("followedCampaigns", JSON.stringify(updatedCampaigns));
+                          const button = document.querySelector('[data-follow-button]') as HTMLButtonElement;
+                          if (button) {
+                            const originalText = button.innerHTML;
+                            button.innerHTML = '<Star className="w-4 h-4 mr-2" />Follow Updates';
+                            button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                            setTimeout(() => {
+                              button.innerHTML = originalText;
+                            }, 2000);
+                          }
+                        }
+                      }}
+                      data-follow-button
+                    >
                       <Star className="w-4 h-4 mr-2" />
                       Follow Updates
                     </Button>
