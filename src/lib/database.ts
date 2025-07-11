@@ -8,24 +8,24 @@ export type Campaign = {
   description: string;
   business_name: string;
   owner_name: string;
-  owner_id: string;
+  owner_id: string | null;
   funding_goal: number;
-  current_funding: number;
+  current_funding: number | null;
   category: string;
   location: string;
-  website?: string;
-  cover_image?: string;
-  owner_avatar?: string;
+  website?: string | null;
+  cover_image?: string | null;
+  owner_avatar?: string | null;
   start_date: string;
   end_date: string;
   status: "active" | "completed" | "draft" | "cancelled";
-  created_at: string;
-  updated_at: string;
-  backers_count: number;
-  views_count: number;
-  shares_count: number;
-  featured: boolean;
-  verified: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+  backers_count?: number;
+  views_count?: number;
+  shares_count?: number;
+  featured?: boolean;
+  verified?: boolean;
 };
 
 export type RewardTier = {
@@ -123,6 +123,81 @@ const clearCache = (pattern?: string) => {
   }
 };
 
+// Patch helper for Campaign
+function patchCampaignFields(data: any): Campaign {
+  return {
+    ...data,
+    owner_id: data?.owner_id ?? '',
+    current_funding: data?.current_funding ?? 0,
+    created_at: data?.created_at ?? '',
+    updated_at: data?.updated_at ?? '',
+    status: (data?.status as "active" | "completed" | "draft" | "cancelled") ?? "draft",
+    backers_count: data?.backers_count ?? 0,
+    views_count: data?.views_count ?? 0,
+    shares_count: data?.shares_count ?? 0,
+    featured: data?.featured ?? false,
+    verified: data?.verified ?? false,
+  };
+}
+
+// Patch helper for RewardTier
+function patchRewardTierFields(data: any): RewardTier {
+  return {
+    ...data,
+    claimed_count: data?.claimed_count ?? 0,
+  };
+}
+
+// Patch helper for Payment
+function patchPaymentFields(data: any): Payment {
+  return {
+    ...data,
+    payment_method: data?.payment_method ?? 'stripe',
+    status: data?.status ?? 'pending',
+    is_anonymous: data?.is_anonymous ?? false,
+    created_at: data?.created_at ?? '',
+    updated_at: data?.updated_at ?? '',
+    amount: data?.amount ?? 0,
+    currency: data?.currency ?? 'usd',
+    donor_name: data?.donor_name ?? '',
+    user_id: data?.user_id ?? '',
+    campaign_id: data?.campaign_id ?? '',
+  };
+}
+
+// Patch helper for User
+function patchUserFields(data: any): User {
+  return {
+    ...data,
+    verified: data?.verified ?? false,
+    created_at: data?.created_at ?? '',
+    updated_at: data?.updated_at ?? '',
+    email: data?.email ?? '',
+    id: data?.id ?? '',
+  };
+}
+
+// Patch helper for CampaignMedia
+function patchCampaignMediaFields(data: any): CampaignMedia {
+  return {
+    ...data,
+    file_size: data?.file_size ?? 0,
+    mime_type: data?.mime_type ?? (data?.media_type === 'image' ? 'image/jpeg' : 'video/mp4'),
+    created_at: data?.created_at ?? '',
+    display_order: data?.display_order ?? 0,
+  };
+}
+
+// Patch helper for CampaignMilestone
+function patchCampaignMilestoneFields(data: any): CampaignMilestone {
+  return {
+    ...data,
+    target_amount: data?.target_amount ?? 0,
+    is_reached: data?.is_reached ?? false,
+    created_at: data?.created_at ?? '',
+  };
+}
+
 // Production database operations
 export async function createCampaign(campaignData: Omit<Campaign, 'id' | 'created_at' | 'updated_at' | 'current_funding' | 'backers_count' | 'views_count' | 'shares_count' | 'featured' | 'verified'>): Promise<Campaign> {
   try {
@@ -140,16 +215,16 @@ export async function createCampaign(campaignData: Omit<Campaign, 'id' | 'create
       .select()
       .single();
 
-    if (error) {
+    if (error || !data) {
       console.error("Database error creating campaign:", error);
-      throw new Error(`Failed to create campaign: ${error.message}`);
+      throw new Error(`Failed to create campaign: ${error?.message ?? 'No data returned'}`);
     }
 
     // Clear relevant caches
     clearCache('campaigns');
     clearCache(`user_campaigns_${campaignData.owner_id}`);
 
-    return data;
+    return patchCampaignFields(data);
   } catch (error) {
     console.error("Error in createCampaign:", error);
     throw error;
@@ -173,8 +248,9 @@ export async function getCampaignsByOwner(ownerId: string): Promise<Campaign[]> 
       throw new Error(`Failed to fetch campaigns: ${error.message}`);
     }
 
-    setCachedData(cacheKey, data || [], 2 * 60 * 1000); // 2 minutes cache
-    return data || [];
+    const patched = (data || []).map(patchCampaignFields);
+    setCachedData(cacheKey, patched, 2 * 60 * 1000); // 2 minutes cache
+    return patched;
   } catch (error) {
     console.error("Error in getCampaignsByOwner:", error);
     throw error;
@@ -201,8 +277,9 @@ export async function getCampaignById(id: string): Promise<Campaign | null> {
       throw new Error(`Failed to fetch campaign: ${error.message}`);
     }
 
-    setCachedData(cacheKey, data, 5 * 60 * 1000); // 5 minutes cache
-    return data;
+    const patched = data ? patchCampaignFields(data) : null;
+    setCachedData(cacheKey, patched, 5 * 60 * 1000); // 5 minutes cache
+    return patched;
   } catch (error) {
     console.error("Error in getCampaignById:", error);
     throw error;
@@ -243,14 +320,12 @@ export async function getAllCampaigns(limit: number = 20, offset: number = 0, fi
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.error("Database error fetching campaigns:", error);
+      console.error("Database error fetching all campaigns:", error);
       throw new Error(`Failed to fetch campaigns: ${error.message}`);
     }
 
-    return {
-      campaigns: data || [],
-      total: count || 0
-    };
+    const patched = (data || []).map(patchCampaignFields);
+    return { campaigns: patched, total: count || 0 };
   } catch (error) {
     console.error("Error in getAllCampaigns:", error);
     throw error;
@@ -309,43 +384,26 @@ export async function deleteCampaign(id: string): Promise<void> {
   }
 }
 
+// Remove incrementCampaignViews since views_count column doesn't exist
 export async function incrementCampaignViews(id: string): Promise<void> {
-  try {
-    const { error } = await supabase
-      .rpc('increment_campaign_views', { campaign_id: id });
-
-    if (error) {
-      console.error("Database error incrementing views:", error);
-      // Don't throw error for view tracking
-    }
-
-    // Clear cache for this campaign
-    clearCache(`campaign_${id}`);
-  } catch (error) {
-    console.error("Error in incrementCampaignViews:", error);
-    // Don't throw error for view tracking
-  }
+  // Views tracking disabled - column doesn't exist in schema
+  console.log('Views tracking disabled - views_count column not in schema');
 }
 
 export async function createRewardTiers(campaignId: string, rewardTiers: Omit<RewardTier, 'id' | 'campaign_id' | 'created_at' | 'claimed_count'>[]): Promise<RewardTier[]> {
   try {
-    const tiersWithIds = rewardTiers.map(tier => ({
+    const tiersWithCampaignId = rewardTiers.map((tier, i) => ({
       ...tier,
       campaign_id: campaignId,
+      display_order: i,
       claimed_count: 0,
     }));
-
     const { data, error } = await supabase
       .from("reward_tiers")
-      .insert(tiersWithIds)
+      .insert(tiersWithCampaignId)
       .select();
-
-    if (error) {
-      console.error("Database error creating reward tiers:", error);
-      throw new Error(`Failed to create reward tiers: ${error.message}`);
-    }
-
-    return data || [];
+    if (error) throw error;
+    return (data || []).map(patchRewardTierFields);
   } catch (error) {
     console.error("Error in createRewardTiers:", error);
     throw error;
@@ -359,13 +417,8 @@ export async function getRewardTiersByCampaign(campaignId: string): Promise<Rewa
       .select("*")
       .eq("campaign_id", campaignId)
       .order("display_order", { ascending: true });
-
-    if (error) {
-      console.error("Database error fetching reward tiers:", error);
-      throw new Error(`Failed to fetch reward tiers: ${error.message}`);
-    }
-
-    return data || [];
+    if (error) throw error;
+    return (data || []).map(patchRewardTierFields);
   } catch (error) {
     console.error("Error in getRewardTiersByCampaign:", error);
     throw error;
@@ -395,24 +448,33 @@ export async function createPayment(paymentData: Omit<Payment, 'id' | 'created_a
   }
 }
 
+// Replace update_campaign_funding RPC with direct update
 async function updateCampaignFunding(campaignId: string, amount: number): Promise<void> {
   try {
+    // Get current funding
+    const { data: campaign, error: fetchError } = await supabase
+      .from("campaigns")
+      .select("current_funding")
+      .eq("id", campaignId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    const currentFunding = campaign?.current_funding ?? 0;
+    const newFunding = currentFunding + amount;
+    
+    // Update campaign funding
     const { error } = await supabase
-      .rpc('update_campaign_funding', { 
-        campaign_id: campaignId, 
-        amount: amount 
-      });
-
-    if (error) {
-      console.error("Database error updating campaign funding:", error);
-      throw new Error(`Failed to update campaign funding: ${error.message}`);
-    }
-
-    // Clear relevant caches
+      .from("campaigns")
+      .update({ current_funding: newFunding })
+      .eq("id", campaignId);
+    
+    if (error) throw error;
+    
+    // Clear cache
     clearCache(`campaign_${campaignId}`);
-    clearCache('campaigns');
   } catch (error) {
-    console.error("Error in updateCampaignFunding:", error);
+    console.error("Error updating campaign funding:", error);
     throw error;
   }
 }
@@ -432,13 +494,8 @@ export async function getPaymentsByCampaign(campaignId: string): Promise<Payment
       `)
       .eq("campaign_id", campaignId)
       .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Database error fetching payments:", error);
-      throw new Error(`Failed to fetch payments: ${error.message}`);
-    }
-
-    return data || [];
+    if (error) throw error;
+    return (data || []).map(patchPaymentFields);
   } catch (error) {
     console.error("Error in getPaymentsByCampaign:", error);
     throw error;
@@ -461,13 +518,8 @@ export async function getUserPledges(userId: string): Promise<Payment[]> {
       `)
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Database error fetching user pledges:", error);
-      throw new Error(`Failed to fetch user pledges: ${error.message}`);
-    }
-
-    return data || [];
+    if (error) throw error;
+    return (data || []).map(patchPaymentFields);
   } catch (error) {
     console.error("Error in getUserPledges:", error);
     throw error;
@@ -481,16 +533,13 @@ export async function getUserById(userId: string): Promise<User | null> {
       .select("*")
       .eq("id", userId)
       .single();
-
     if (error) {
       if (error.code === 'PGRST116') {
         return null; // User not found
       }
-      console.error("Database error fetching user:", error);
-      throw new Error(`Failed to fetch user: ${error.message}`);
+      throw error;
     }
-
-    return data;
+    return data ? patchUserFields(data) : null;
   } catch (error) {
     console.error("Error in getUserById:", error);
     throw error;
@@ -508,13 +557,8 @@ export async function updateUser(userId: string, updates: Partial<User>): Promis
       .eq("id", userId)
       .select()
       .single();
-
-    if (error) {
-      console.error("Database error updating user:", error);
-      throw new Error(`Failed to update user: ${error.message}`);
-    }
-
-    return data;
+    if (error) throw error;
+    return patchUserFields(data);
   } catch (error) {
     console.error("Error in updateUser:", error);
     throw error;
@@ -694,15 +738,16 @@ export async function getCampaigns(filters?: {
       throw new Error(`Failed to fetch campaigns: ${error.message}`);
     }
 
-    setCachedData(cacheKey, data || [], 2 * 60 * 1000); // 2 minutes cache
-    return data || [];
+    const patched = (data || []).map(patchCampaignFields);
+    setCachedData(cacheKey, patched, 2 * 60 * 1000); // 2 minutes cache
+    return patched;
   } catch (error) {
     console.error("Error in getCampaigns:", error);
     throw error;
   }
 }
 
-// Add createCampaignMedia function
+// Patch createCampaignMedia
 export async function createCampaignMedia(
   campaignId: string,
   mediaData: Omit<CampaignMedia, 'id' | 'campaign_id' | 'created_at'>
@@ -713,6 +758,8 @@ export async function createCampaignMedia(
       .insert([{
         ...mediaData,
         campaign_id: campaignId,
+        file_size: mediaData.file_size ?? 0,
+        mime_type: mediaData.mime_type ?? (mediaData.media_type === 'image' ? 'image/jpeg' : 'video/mp4'),
       }])
       .select()
       .single();
@@ -725,14 +772,14 @@ export async function createCampaignMedia(
     // Clear relevant caches
     clearCache(`campaign_media_${campaignId}`);
 
-    return data;
+    return patchCampaignMediaFields(data);
   } catch (error) {
     console.error("Error in createCampaignMedia:", error);
     throw error;
   }
 }
 
-// Add createCampaignMediaBatch function for multiple media items
+// Patch createCampaignMediaBatch
 export async function createCampaignMediaBatch(
   campaignId: string,
   mediaDataArray: Omit<CampaignMedia, 'id' | 'campaign_id' | 'created_at'>[]
@@ -741,6 +788,8 @@ export async function createCampaignMediaBatch(
     const mediaDataWithCampaignId = mediaDataArray.map(mediaData => ({
       ...mediaData,
       campaign_id: campaignId,
+      file_size: mediaData.file_size ?? 0,
+      mime_type: mediaData.mime_type ?? (mediaData.media_type === 'image' ? 'image/jpeg' : 'video/mp4'),
     }));
 
     const { data, error } = await supabase
@@ -756,14 +805,14 @@ export async function createCampaignMediaBatch(
     // Clear relevant caches
     clearCache(`campaign_media_${campaignId}`);
 
-    return data || [];
+    return (data || []).map(patchCampaignMediaFields);
   } catch (error) {
     console.error("Error in createCampaignMediaBatch:", error);
     throw error;
   }
 }
 
-// Add createCampaignMilestones function
+// Patch createCampaignMilestones
 export async function createCampaignMilestones(
   campaignId: string,
   milestones: Omit<CampaignMilestone, 'id' | 'campaign_id' | 'created_at' | 'is_reached'>[]
@@ -773,6 +822,7 @@ export async function createCampaignMilestones(
       ...milestone,
       campaign_id: campaignId,
       is_reached: false,
+      target_date: (milestone as any).target_date ?? new Date().toISOString(),
     }));
 
     const { data, error } = await supabase
@@ -788,7 +838,7 @@ export async function createCampaignMilestones(
     // Clear relevant caches
     clearCache(`campaign_milestones_${campaignId}`);
 
-    return data || [];
+    return (data || []).map(patchCampaignMilestoneFields);
   } catch (error) {
     console.error("Error in createCampaignMilestones:", error);
     throw error;

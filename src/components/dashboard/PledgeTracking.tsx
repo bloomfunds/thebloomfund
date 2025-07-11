@@ -24,6 +24,21 @@ import {
 import Link from "next/link";
 import { getUserPledges } from "@/lib/database";
 
+// Type for payment with joined campaign data
+type PaymentWithCampaign = {
+  id: string;
+  amount: number;
+  created_at: string;
+  status: "pending" | "succeeded" | "failed" | "refunded";
+  campaigns: {
+    id: string;
+    title: string;
+    business_name: string;
+    cover_image?: string;
+  } | null;
+  [key: string]: any; // For other payment fields
+};
+
 interface Pledge {
   id: string;
   amount: number;
@@ -61,10 +76,14 @@ export default function PledgeTracking({
 
   const fetchUserPledges = async () => {
     try {
-      const userPledges = await getUserPledges(userId);
+      const userPledges = await getUserPledges(userId) as unknown as PaymentWithCampaign[];
       // Add mock reward tier data for demonstration
       const pledgesWithRewards = userPledges.map((pledge, index) => ({
-        ...pledge,
+        id: pledge.id,
+        amount: pledge.amount,
+        created_at: pledge.created_at,
+        status: (pledge.status === "refunded" ? "failed" : pledge.status) as "succeeded" | "pending" | "failed",
+        campaigns: pledge.campaigns, // This comes from the database join
         reward_tier: {
           title: ["Early Bird Special", "Premium Package", "Supporter Tier"][
             index % 3
@@ -77,19 +96,14 @@ export default function PledgeTracking({
           estimated_delivery: "2024-12-01",
           fulfillment_status: ["pending", "processing", "shipped", "delivered"][
             index % 4
-          ] as any,
+          ] as "pending" | "processing" | "shipped" | "delivered",
           tracking_number:
             index % 2 === 0
               ? `TRK${Math.random().toString(36).substr(2, 9).toUpperCase()}`
               : undefined,
         },
       }));
-      setPledges(
-        pledgesWithRewards.map((pledge) => ({
-          ...pledge,
-          status: pledge.status === "cancelled" ? "failed" : pledge.status,
-        }))
-      );
+      setPledges(pledgesWithRewards);
     } catch (error) {
       console.error("Error fetching pledges:", error);
     } finally {
