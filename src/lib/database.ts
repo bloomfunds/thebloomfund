@@ -356,7 +356,7 @@ export async function updateCampaign(id: string, updates: Partial<Campaign>): Pr
       clearCache(`user_campaigns_${data.owner_id}`);
     }
 
-    return data;
+    return patchCampaignFields(data);
   } catch (error) {
     console.error("Error in updateCampaign:", error);
     throw error;
@@ -441,7 +441,7 @@ export async function createPayment(paymentData: Omit<Payment, 'id' | 'created_a
     // Update campaign funding and backer count
     await updateCampaignFunding(paymentData.campaign_id, paymentData.amount);
 
-    return data;
+    return patchPaymentFields(data);
   } catch (error) {
     console.error("Error in createPayment:", error);
     throw error;
@@ -628,7 +628,7 @@ export async function searchCampaigns(filters: {
     // Apply client-side filters that can't be done in SQL
     if (filters.fundingStatus && filters.fundingStatus !== "all") {
       results = results.filter(campaign => {
-        const percentage = (campaign.current_funding / campaign.funding_goal) * 100;
+        const percentage = ((campaign.current_funding || 0) / campaign.funding_goal) * 100;
         switch (filters.fundingStatus) {
           case "under_25": return percentage < 25;
           case "25_50": return percentage >= 25 && percentage < 50;
@@ -655,7 +655,7 @@ export async function searchCampaigns(filters: {
       });
     }
 
-    return results;
+    return results.map(patchCampaignFields);
   } catch (error) {
     console.error("Error in searchCampaigns:", error);
     throw error;
