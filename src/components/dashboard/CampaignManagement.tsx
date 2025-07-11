@@ -34,18 +34,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getCampaignsByOwner } from "@/lib/database";
+import { Tables } from "@/types/supabase";
 
-interface Campaign {
-  id: string;
-  title: string;
-  description: string;
-  current_funding: number;
-  funding_goal: number;
-  status: "draft" | "active" | "completed" | "cancelled" | "paused";
-  cover_image?: string;
-  created_at: string;
-  end_date: string;
-}
+type Campaign = Tables<"campaigns">;
 
 interface CampaignManagementProps {
   userId?: string;
@@ -65,7 +56,18 @@ export default function CampaignManagement({
   const fetchUserCampaigns = async () => {
     try {
       const userCampaigns = await getCampaignsByOwner(userId);
-      setCampaigns(userCampaigns);
+      // Convert database Campaign type to Supabase Campaign type
+      const convertedData = userCampaigns.map(campaign => ({
+        ...campaign,
+        cover_image: campaign.cover_image || null,
+        current_funding: campaign.current_funding || 0,
+        owner_id: campaign.owner_id || '',
+        created_at: campaign.created_at || null,
+        updated_at: campaign.updated_at || null,
+        website: campaign.website || null,
+        owner_avatar: campaign.owner_avatar || null,
+      }));
+      setCampaigns(convertedData);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
     } finally {
@@ -204,12 +206,12 @@ export default function CampaignManagement({
               filteredCampaigns.map((campaign) => {
                 const fundingPercentage = Math.min(
                   Math.round(
-                    (campaign.current_funding / campaign.funding_goal) * 100,
+                    ((campaign.current_funding || 0) / campaign.funding_goal) * 100,
                   ),
                   100,
                 );
                 const daysRemaining = getDaysRemaining(campaign.end_date);
-                const backerCount = Math.floor(campaign.current_funding / 150);
+                const backerCount = Math.floor((campaign.current_funding || 0) / 150);
 
                 return (
                   <Card
@@ -323,7 +325,7 @@ export default function CampaignManagement({
                             <div>
                               <p className="text-sm text-gray-500">Raised</p>
                               <p className="font-semibold text-green-600">
-                                ${(campaign.current_funding / 1000).toFixed(0)}K
+                                ${((campaign.current_funding || 0) / 1000).toFixed(0)}K
                               </p>
                             </div>
                             <div>
