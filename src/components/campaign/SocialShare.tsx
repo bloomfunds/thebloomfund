@@ -29,7 +29,9 @@ import {
   Heart,
   ExternalLink,
 } from "lucide-react";
-import { Campaign } from "@/lib/supabase";
+import { Tables } from "@/types/supabase";
+
+type Campaign = Tables<"campaigns">;
 
 interface SocialShareProps {
   campaign: Campaign;
@@ -167,7 +169,7 @@ export default function SocialShare({ campaign, className }: SocialShareProps) {
                   <div className="flex items-center gap-1">
                     <Heart className="w-4 h-4 text-green-600" />
                     <span className="font-medium text-green-700">
-                      ${(campaign.current_funding / 100).toLocaleString()}
+                      ${((campaign.current_funding || 0) / 100).toLocaleString()}
                     </span>
                     <span className="text-gray-600">raised</span>
                   </div>
@@ -176,7 +178,7 @@ export default function SocialShare({ campaign, className }: SocialShareProps) {
                     className="bg-green-100 text-green-700"
                   >
                     {Math.round(
-                      (campaign.current_funding / campaign.funding_goal) * 100,
+                      ((campaign.current_funding || 0) / campaign.funding_goal) * 100,
                     )}
                     % funded
                   </Badge>

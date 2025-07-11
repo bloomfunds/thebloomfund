@@ -30,7 +30,9 @@ import Link from "next/link";
 import { getCampaigns } from "@/lib/database";
 import TestimonialCarousel from "@/components/ui/testimonial-carousel";
 import CampaignFullyFundedPopup from "@/components/CampaignFullyFundedPopup";
-import { Campaign } from "@/lib/supabase";
+import { Tables } from "@/types/supabase";
+
+type Campaign = Tables<"campaigns">;
 
 // Typewriter component
 function TypewriterText({ isMounted }: { isMounted: boolean }) {
