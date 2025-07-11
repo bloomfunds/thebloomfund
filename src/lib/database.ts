@@ -696,5 +696,37 @@ export async function createCampaignMedia(
   }
 }
 
+// Add createCampaignMilestones function
+export async function createCampaignMilestones(
+  campaignId: string,
+  milestones: Omit<CampaignMilestone, 'id' | 'campaign_id' | 'created_at' | 'is_reached'>[]
+): Promise<CampaignMilestone[]> {
+  try {
+    const milestonesData = milestones.map(milestone => ({
+      ...milestone,
+      campaign_id: campaignId,
+      is_reached: false,
+    }));
+
+    const { data, error } = await supabase
+      .from("campaign_milestones")
+      .insert(milestonesData)
+      .select();
+
+    if (error) {
+      console.error("Database error creating campaign milestones:", error);
+      throw new Error(`Failed to create campaign milestones: ${error.message}`);
+    }
+
+    // Clear relevant caches
+    clearCache(`campaign_milestones_${campaignId}`);
+
+    return data || [];
+  } catch (error) {
+    console.error("Error in createCampaignMilestones:", error);
+    throw error;
+  }
+}
+
 // Export cache management for admin use
 export { clearCache, getCachedData, setCachedData };
