@@ -25,6 +25,7 @@ import {
   Zap,
   Crown,
   Eye,
+  CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { getCampaigns } from "@/lib/database";
@@ -303,8 +304,8 @@ function ThreeDDashboard({ isMounted }: { isMounted: boolean }) {
                 color: "from-blue-500 to-cyan-600",
               },
               {
-                label: "Platform Growth",
-                value: "+340%",
+                label: "Success Rate",
+                value: "94%",
                 color: "from-purple-500 to-pink-600",
               },
             ].map((stat, index) => (
@@ -387,11 +388,11 @@ function StatsCounter({ isMounted }: { isMounted: boolean }) {
 // Floating icons component
 function FloatingIcons() {
   const icons = [
-    { Icon: Crown, delay: 0, position: { top: "20%", left: "10%" } },
-    { Icon: Heart, delay: 1, position: { top: "30%", right: "15%" } },
-    { Icon: Rocket, delay: 2, position: { top: "60%", left: "5%" } },
-    { Icon: Star, delay: 3, position: { top: "70%", right: "10%" } },
-    { Icon: Zap, delay: 4, position: { top: "40%", left: "85%" } },
+    { Icon: Target, delay: 0, position: { top: "20%", left: "10%" } },
+    { Icon: TrendingUp, delay: 1, position: { top: "30%", right: "15%" } },
+    { Icon: Users, delay: 2, position: { top: "60%", left: "5%" } },
+    { Icon: DollarSign, delay: 3, position: { top: "70%", right: "10%" } },
+    { Icon: CheckCircle, delay: 4, position: { top: "40%", left: "85%" } },
   ];
 
   return (
@@ -513,9 +514,6 @@ export default function HomePage() {
                   href="/campaigns"
                   className="group glass-premium w-full sm:w-auto px-8 py-4 sm:py-4 text-gray-800 font-semibold text-base sm:text-base transition-all duration-300 hover:bg-white/60 flex items-center justify-center gap-3 hover-lift rounded-xl min-h-[52px]"
                 >
-                  <div className="w-6 h-6 bg-gradient-to-r from-green-600 to-green-700 rounded-lg flex items-center justify-center">
-                    <Eye className="w-4 h-4 text-white" />
-                  </div>
                   <span>Explore Campaigns</span>
                 </Link>
               </div>
@@ -562,7 +560,6 @@ export default function HomePage() {
           <div className="flex flex-col items-center justify-center space-y-6 text-center mb-16">
             <div className="space-y-4">
               <div className="inline-flex items-center px-6 py-3 bg-green-100/80 backdrop-blur-sm rounded-full mb-4">
-                <Target className="w-4 h-4 text-green-600 mr-2" />
                 <span className="text-green-700 text-sm font-semibold">
                   Featured Campaigns
                 </span>
@@ -572,7 +569,7 @@ export default function HomePage() {
               </h2>
               <p className="mx-auto max-w-[800px] text-gray-600 text-base sm:text-lg md:text-xl leading-relaxed px-4 sm:px-0">
                 Explore some of our business ideas from passionate entrepreneurs
-                that was once everyday people like you.
+                that were once everyday people like you.
               </p>
             </div>
           </div>
@@ -933,7 +930,7 @@ export default function HomePage() {
                 className="border-2 border-white/30 text-white hover:bg-white/10 rounded-2xl px-6 sm:px-8 py-3 sm:py-4 font-semibold text-base sm:text-lg backdrop-blur-sm w-full sm:w-auto mobile-button"
                 asChild
               >
-                <Link href="/campaigns">
+                <Link href="/campaigns" className="text-white">
                   Explore Campaigns{" "}
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>

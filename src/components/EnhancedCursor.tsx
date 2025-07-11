@@ -322,14 +322,14 @@ export default function EnhancedCursor({ className }: EnhancedCursorProps) {
       {/* Main cursor ring */}
       <div
         className={cn(
-          "enhanced-cursor custom-cursor fixed pointer-events-none transition-all duration-150 ease-out",
-          "w-8 h-8 rounded-full border-2 border-primary/80 bg-primary/10",
-          "backdrop-blur-sm shadow-lg shadow-primary/30",
+          "enhanced-cursor custom-cursor fixed pointer-events-none transition-all duration-100 ease-out",
+          "w-6 h-6 rounded-full border border-primary/60 bg-primary/5",
+          "backdrop-blur-sm shadow-sm shadow-primary/20",
           "transform -translate-x-1/2 -translate-y-1/2",
           isVisible ? "opacity-100 visible" : "opacity-0 invisible",
           isHovering &&
-            "scale-150 border-primary bg-primary/20 shadow-primary/50",
-          isClicking && "scale-75",
+            "scale-125 border-primary/80 bg-primary/10 shadow-primary/30",
+          isClicking && "scale-90",
           className,
         )}
         style={{
@@ -347,12 +347,12 @@ export default function EnhancedCursor({ className }: EnhancedCursorProps) {
       {/* Inner cursor dot */}
       <div
         className={cn(
-          "enhanced-cursor custom-cursor fixed pointer-events-none transition-all duration-200 ease-out",
-          "w-2 h-2 rounded-full bg-primary/60",
+          "enhanced-cursor custom-cursor fixed pointer-events-none transition-all duration-150 ease-out",
+          "w-1.5 h-1.5 rounded-full bg-primary/70",
           "transform -translate-x-1/2 -translate-y-1/2",
           isVisible ? "opacity-100 visible" : "opacity-0 invisible",
-          isHovering && "scale-150 bg-primary/80",
-          isClicking && "scale-50",
+          isHovering && "scale-125 bg-primary/90",
+          isClicking && "scale-75",
         )}
         style={{
           left: `${position.x}px`,

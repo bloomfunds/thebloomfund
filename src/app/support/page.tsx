@@ -58,12 +58,7 @@ const quickHelpLinks = [
     href: "/faq",
     icon: HelpCircle,
   },
-  {
-    title: "Community Forum",
-    description: "Connect with other entrepreneurs",
-    href: "#",
-    icon: Users,
-  },
+
 ];
 
 export default function SupportPage() {
@@ -327,7 +322,7 @@ export default function SupportPage() {
                   <div>
                     <p className="font-medium">Email</p>
                     <p className="text-sm text-muted-foreground">
-                      support@bloom.com
+                      bloomfund.co@gmail.com
                     </p>
                   </div>
                 </div>
@@ -382,30 +377,7 @@ export default function SupportPage() {
               </CardContent>
             </Card>
 
-            {/* Response Time */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Response Times</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">General Questions</span>
-                  <span className="text-sm font-medium">24 hours</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Technical Issues</span>
-                  <span className="text-sm font-medium">12 hours</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Payment Problems</span>
-                  <span className="text-sm font-medium">6 hours</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Urgent Issues</span>
-                  <span className="text-sm font-medium">2 hours</span>
-                </div>
-              </CardContent>
-            </Card>
+
           </div>
         </div>
       </div>

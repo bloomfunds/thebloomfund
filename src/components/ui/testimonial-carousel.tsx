@@ -508,7 +508,6 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 export default function TestimonialCarousel() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
   const totalTestimonials = testimonials.length;
   const cardWidth = 320; // Approximate card width including gap
 
@@ -518,7 +517,7 @@ export default function TestimonialCarousel() {
 
   // Continuous scrolling effect
   useEffect(() => {
-    if (!isMounted || isPaused) return;
+    if (!isMounted) return;
 
     const interval = setInterval(() => {
       setScrollPosition((prev) => {
@@ -529,7 +528,7 @@ export default function TestimonialCarousel() {
     }, 50); // Smooth slow scrolling
 
     return () => clearInterval(interval);
-  }, [isMounted, isPaused, totalTestimonials]);
+  }, [isMounted, totalTestimonials]);
 
   if (!isMounted) {
     return (
@@ -547,11 +546,7 @@ export default function TestimonialCarousel() {
   const duplicatedTestimonials = [...testimonials, ...testimonials];
 
   return (
-    <div
-      className="max-w-7xl mx-auto relative"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
+    <div className="max-w-7xl mx-auto relative">
       {/* Scrolling Container */}
       <div className="relative overflow-hidden">
         {/* Gradient Overlays */}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +41,7 @@ import {
   FileText,
   Tag,
 } from "lucide-react";
+import { format, addDays, isAfter, isBefore } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import MediaUploader from "./MediaUploader";
 import CampaignPreview from "./CampaignPreview";
@@ -61,11 +63,12 @@ type FormData = {
   website?: string;
   fundingGoal: number;
   minContribution: number;
-  campaignDuration: number;
+  campaignDeadline: Date;
   rewardTiers: {
     amount: number;
     title: string;
     description: string;
+    image?: string;
   }[];
   media: {
     type: "image" | "video";
@@ -84,7 +87,7 @@ const defaultFormData: FormData = {
   website: "",
   fundingGoal: 5000,
   minContribution: 10,
-  campaignDuration: 30,
+  campaignDeadline: addDays(new Date(), 30),
   rewardTiers: [],
   media: [],
 };
@@ -172,7 +175,7 @@ export default function CampaignForm() {
         return (
           formData.fundingGoal > 0 &&
           formData.minContribution > 0 &&
-          formData.campaignDuration > 0
+          isAfter(formData.campaignDeadline, new Date())
         );
       case "rewards":
         return true; // Rewards are optional
@@ -211,8 +214,8 @@ export default function CampaignForm() {
           errors.push("Valid funding goal is required");
         if (!formData.minContribution || formData.minContribution <= 0)
           errors.push("Valid minimum contribution is required");
-        if (!formData.campaignDuration || formData.campaignDuration <= 0)
-          errors.push("Valid campaign duration is required");
+        if (!isAfter(formData.campaignDeadline, new Date()))
+          errors.push("Campaign deadline must be in the future");
         break;
     }
     return errors;
@@ -303,10 +306,9 @@ export default function CampaignForm() {
         currentUser.email?.split("@")[0] ||
         "Campaign Owner";
 
-      // Calculate end date based on duration
+      // Use the selected deadline
       const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(startDate.getDate() + formData.campaignDuration);
+      const endDate = formData.campaignDeadline;
 
       const campaignData = {
         title: formData.title.trim(),
@@ -378,6 +380,30 @@ export default function CampaignForm() {
           <CardContent className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin mr-2 text-primary" />
             <span className="text-lg font-medium">Loading...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Sign In Required</h2>
+            <p className="text-muted-foreground mb-6">
+              You need to be signed in to create a campaign.
+            </p>
+            <div className="space-y-3">
+              <Button asChild className="w-full">
+                <Link href="/auth/signin">Sign In</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/auth/signup">Create Account</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -631,15 +657,14 @@ export default function CampaignForm() {
                     htmlFor="businessDescription"
                     className="text-base font-semibold"
                   >
-                    Business Description *
+                    Tell Us Your Story *
                   </Label>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Describe your business, what makes it unique, and why people
-                    should support it
+                    Share your business idea and why it matters
                   </p>
                   <Textarea
                     id="businessDescription"
-                    placeholder="Tell your story... What problem does your business solve? What makes it special?"
+                    placeholder="Tell us your story and other info..."
                     className="min-h-[150px] text-base"
                     value={formData.businessDescription}
                     onChange={(e) =>
@@ -704,10 +729,15 @@ export default function CampaignForm() {
                       type="number"
                       min="1"
                       placeholder="5000"
-                      value={formData.fundingGoal}
-                      onChange={(e) =>
-                        handleInputChange("fundingGoal", Number(e.target.value))
-                      }
+                      value={formData.fundingGoal || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || value === "0") {
+                          handleInputChange("fundingGoal", 0);
+                        } else {
+                          handleInputChange("fundingGoal", Number(value));
+                        }
+                      }}
                       className="h-12 text-base"
                     />
                   </div>
@@ -726,13 +756,15 @@ export default function CampaignForm() {
                       type="number"
                       min="1"
                       placeholder="10"
-                      value={formData.minContribution}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "minContribution",
-                          Number(e.target.value),
-                        )
-                      }
+                      value={formData.minContribution || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || value === "0") {
+                          handleInputChange("minContribution", 0);
+                        } else {
+                          handleInputChange("minContribution", Number(value));
+                        }
+                      }}
                       className="h-12 text-base"
                     />
                   </div>
@@ -740,31 +772,28 @@ export default function CampaignForm() {
 
                 <div>
                   <Label
-                    htmlFor="campaignDuration"
+                    htmlFor="campaignDeadline"
                     className="text-base font-semibold"
                   >
-                    Campaign Duration (Days) *
+                    Campaign Deadline *
                   </Label>
                   <p className="text-sm text-muted-foreground mb-3">
-                    How long should your campaign run? (Recommended: 30-60 days)
+                    When should your campaign end? (Minimum 7 days, maximum 90 days from today)
                   </p>
-                  <Select
-                    value={formData.campaignDuration.toString()}
-                    onValueChange={(value) =>
-                      handleInputChange("campaignDuration", Number(value))
-                    }
-                  >
-                    <SelectTrigger className="h-12 text-base">
-                      <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">15 days</SelectItem>
-                      <SelectItem value="30">30 days (Recommended)</SelectItem>
-                      <SelectItem value="45">45 days</SelectItem>
-                      <SelectItem value="60">60 days</SelectItem>
-                      <SelectItem value="90">90 days</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="campaignDeadline"
+                    type="date"
+                    min={format(addDays(new Date(), 7), 'yyyy-MM-dd')}
+                    max={format(addDays(new Date(), 90), 'yyyy-MM-dd')}
+                    value={format(formData.campaignDeadline, 'yyyy-MM-dd')}
+                    onChange={(e) => {
+                      const date = new Date(e.target.value);
+                      if (isAfter(date, new Date()) && isBefore(date, addDays(new Date(), 91))) {
+                        handleInputChange("campaignDeadline", date);
+                      }
+                    }}
+                    className="h-12 text-base"
+                  />
                 </div>
               </div>
             )}
@@ -835,14 +864,15 @@ export default function CampaignForm() {
                               id={`tierAmount-${index}`}
                               type="number"
                               min="1"
-                              value={tier.amount}
-                              onChange={(e) =>
-                                updateRewardTier(
-                                  index,
-                                  "amount",
-                                  Number(e.target.value),
-                                )
-                              }
+                              value={tier.amount || ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === "" || value === "0") {
+                                  updateRewardTier(index, "amount", 0);
+                                } else {
+                                  updateRewardTier(index, "amount", Number(value));
+                                }
+                              }}
                               className="h-10"
                             />
                           </div>
@@ -885,6 +915,59 @@ export default function CampaignForm() {
                             className="min-h-[80px]"
                           />
                         </div>
+                        <div>
+                          <Label className="font-medium">
+                            Reward Image (Optional)
+                          </Label>
+                          <div className="mt-2">
+                            {tier.image ? (
+                              <div className="relative">
+                                <img
+                                  src={tier.image}
+                                  alt="Reward preview"
+                                  className="w-32 h-32 object-cover rounded-lg border"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => updateRewardTier(index, "image", undefined)}
+                                  className="absolute top-1 right-1 bg-red-500 text-white hover:bg-red-600 rounded-full w-6 h-6 p-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                <p className="text-sm text-gray-500 mb-2">
+                                  Upload an image for this reward tier
+                                </p>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const url = URL.createObjectURL(file);
+                                      updateRewardTier(index, "image", url);
+                                    }
+                                  }}
+                                  className="hidden"
+                                  id={`tierImage-${index}`}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => document.getElementById(`tierImage-${index}`)?.click()}
+                                >
+                                  Choose Image
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -915,7 +998,7 @@ export default function CampaignForm() {
                   }
                   fundingGoal={formData.fundingGoal}
                   currentFunding={0}
-                  daysRemaining={formData.campaignDuration}
+                  daysRemaining={Math.ceil((formData.campaignDeadline.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
                   backerCount={0}
                   category={formData.businessCategory}
                   coverImage={
