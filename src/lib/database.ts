@@ -696,6 +696,37 @@ export async function createCampaignMedia(
   }
 }
 
+// Add createCampaignMediaBatch function for multiple media items
+export async function createCampaignMediaBatch(
+  campaignId: string,
+  mediaDataArray: Omit<CampaignMedia, 'id' | 'campaign_id' | 'created_at'>[]
+): Promise<CampaignMedia[]> {
+  try {
+    const mediaDataWithCampaignId = mediaDataArray.map(mediaData => ({
+      ...mediaData,
+      campaign_id: campaignId,
+    }));
+
+    const { data, error } = await supabase
+      .from("campaign_media")
+      .insert(mediaDataWithCampaignId)
+      .select();
+
+    if (error) {
+      console.error("Database error creating campaign media batch:", error);
+      throw new Error(`Failed to create campaign media batch: ${error.message}`);
+    }
+
+    // Clear relevant caches
+    clearCache(`campaign_media_${campaignId}`);
+
+    return data || [];
+  } catch (error) {
+    console.error("Error in createCampaignMediaBatch:", error);
+    throw error;
+  }
+}
+
 // Add createCampaignMilestones function
 export async function createCampaignMilestones(
   campaignId: string,

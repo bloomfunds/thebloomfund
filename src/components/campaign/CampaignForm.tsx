@@ -46,7 +46,7 @@ import CampaignPreview from "./CampaignPreview";
 import {
   createCampaign,
   createRewardTiers,
-  createCampaignMedia,
+  createCampaignMediaBatch,
   createCampaignMilestones,
 } from "@/lib/database";
 import { getCurrentUser } from "@/lib/supabase";
@@ -351,9 +351,11 @@ export default function CampaignForm() {
           media_url: media.url,
           caption: media.caption ? media.caption : undefined,
           display_order: index,
+          file_size: 0, // Default file size since we don't have actual file info
+          mime_type: media.type === "image" ? "image/jpeg" : "video/mp4", // Default MIME types
         }));
 
-        await createCampaignMedia(campaign.id, mediaData);
+        await createCampaignMediaBatch(campaign.id, mediaData);
       }
 
       setSubmitSuccess(true);
