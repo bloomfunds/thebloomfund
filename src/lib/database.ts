@@ -421,9 +421,16 @@ export async function getPaymentsByCampaign(campaignId: string): Promise<Payment
   try {
     const { data, error } = await supabase
       .from("payments")
-      .select("*")
+      .select(`
+        *,
+        campaigns:campaign_id (
+          id,
+          title,
+          business_name,
+          cover_image
+        )
+      `)
       .eq("campaign_id", campaignId)
-      .eq("status", "succeeded")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -434,6 +441,35 @@ export async function getPaymentsByCampaign(campaignId: string): Promise<Payment
     return data || [];
   } catch (error) {
     console.error("Error in getPaymentsByCampaign:", error);
+    throw error;
+  }
+}
+
+// Add getUserPledges function to get user's payment history
+export async function getUserPledges(userId: string): Promise<Payment[]> {
+  try {
+    const { data, error } = await supabase
+      .from("payments")
+      .select(`
+        *,
+        campaigns:campaign_id (
+          id,
+          title,
+          business_name,
+          cover_image
+        )
+      `)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Database error fetching user pledges:", error);
+      throw new Error(`Failed to fetch user pledges: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Error in getUserPledges:", error);
     throw error;
   }
 }
