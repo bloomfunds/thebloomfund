@@ -488,19 +488,7 @@ class SupabaseService {
     });
   }
 
-  async markNotificationAsRead(notificationId: string) {
-    return this.withRetry(async () => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId);
 
-      if (error) {
-        console.error('Mark notification as read error:', error);
-        throw new Error(error.message);
-      }
-    });
-  }
 }
 
 // Export singleton instance
