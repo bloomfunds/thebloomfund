@@ -89,6 +89,11 @@ export default function CampaignsPage() {
         sortBy: sortField,
         sortOrder,
         limit: 24,
+        location: locationFilter || undefined,
+        minGoal: minGoal ? parseInt(minGoal) : undefined,
+        maxGoal: maxGoal ? parseInt(maxGoal) : undefined,
+        fundingStatus: fundingStatus !== "all" ? fundingStatus : undefined,
+        timeRemaining: timeRemaining !== "all" ? timeRemaining : undefined,
       });
 
       setCampaigns(data);

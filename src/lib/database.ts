@@ -486,22 +486,96 @@ export async function updateUser(userId: string, updates: Partial<User>): Promis
 }
 
 // Search functionality for production
-export async function searchCampaigns(query: string, limit: number = 20): Promise<Campaign[]> {
+export async function searchCampaigns(filters: {
+  query?: string;
+  category?: string;
+  sortBy?: string;
+  sortOrder?: "desc" | "asc";
+  limit?: number;
+  location?: string;
+  minGoal?: number;
+  maxGoal?: number;
+  fundingStatus?: string;
+  timeRemaining?: string;
+}): Promise<Campaign[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("campaigns")
       .select("*")
-      .or(`title.ilike.%${query}%,description.ilike.%${query}%,business_name.ilike.%${query}%`)
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .eq("status", "active");
+
+    // Text search
+    if (filters.query) {
+      query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%,business_name.ilike.%${filters.query}%`);
+    }
+
+    // Category filter
+    if (filters.category) {
+      query = query.eq("category", filters.category);
+    }
+
+    // Location filter
+    if (filters.location) {
+      query = query.ilike("location", `%${filters.location}%`);
+    }
+
+    // Funding goal range
+    if (filters.minGoal) {
+      query = query.gte("funding_goal", filters.minGoal);
+    }
+    if (filters.maxGoal) {
+      query = query.lte("funding_goal", filters.maxGoal);
+    }
+
+    // Sort options
+    const sortField = filters.sortBy || "created_at";
+    const sortOrder = filters.sortOrder || "desc";
+    query = query.order(sortField, { ascending: sortOrder === "asc" });
+
+    // Limit
+    const limit = filters.limit || 20;
+    query = query.limit(limit);
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Database error searching campaigns:", error);
       throw new Error(`Failed to search campaigns: ${error.message}`);
     }
 
-    return data || [];
+    let results = data || [];
+
+    // Apply client-side filters that can't be done in SQL
+    if (filters.fundingStatus && filters.fundingStatus !== "all") {
+      results = results.filter(campaign => {
+        const percentage = (campaign.current_funding / campaign.funding_goal) * 100;
+        switch (filters.fundingStatus) {
+          case "under_25": return percentage < 25;
+          case "25_50": return percentage >= 25 && percentage < 50;
+          case "50_75": return percentage >= 50 && percentage < 75;
+          case "75_100": return percentage >= 75 && percentage <= 100;
+          case "overfunded": return percentage > 100;
+          default: return true;
+        }
+      });
+    }
+
+    if (filters.timeRemaining && filters.timeRemaining !== "all") {
+      const now = new Date();
+      results = results.filter(campaign => {
+        const endDate = new Date(campaign.end_date);
+        const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        switch (filters.timeRemaining) {
+          case "ending_soon": return daysRemaining <= 7;
+          case "two_weeks": return daysRemaining <= 14;
+          case "one_month": return daysRemaining <= 30;
+          case "more_month": return daysRemaining > 30;
+          default: return true;
+        }
+      });
+    }
+
+    return results;
   } catch (error) {
     console.error("Error in searchCampaigns:", error);
     throw error;
@@ -542,6 +616,82 @@ export async function getCampaignAnalytics(campaignId: string): Promise<{
     };
   } catch (error) {
     console.error("Error in getCampaignAnalytics:", error);
+    throw error;
+  }
+}
+
+// Add getCampaigns function for homepage
+export async function getCampaigns(filters?: {
+  status?: string;
+  limit?: number;
+  category?: string;
+  featured?: boolean;
+}): Promise<Campaign[]> {
+  const cacheKey = `campaigns_${JSON.stringify(filters)}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) return cached;
+
+  try {
+    let query = supabase
+      .from("campaigns")
+      .select("*");
+
+    if (filters?.status) {
+      query = query.eq("status", filters.status);
+    }
+
+    if (filters?.category) {
+      query = query.eq("category", filters.category);
+    }
+
+    if (filters?.featured) {
+      query = query.eq("featured", true);
+    }
+
+    const limit = filters?.limit || 20;
+    query = query.limit(limit).order("created_at", { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Database error fetching campaigns:", error);
+      throw new Error(`Failed to fetch campaigns: ${error.message}`);
+    }
+
+    setCachedData(cacheKey, data || [], 2 * 60 * 1000); // 2 minutes cache
+    return data || [];
+  } catch (error) {
+    console.error("Error in getCampaigns:", error);
+    throw error;
+  }
+}
+
+// Add createCampaignMedia function
+export async function createCampaignMedia(
+  campaignId: string,
+  mediaData: Omit<CampaignMedia, 'id' | 'campaign_id' | 'created_at'>
+): Promise<CampaignMedia> {
+  try {
+    const { data, error } = await supabase
+      .from("campaign_media")
+      .insert([{
+        ...mediaData,
+        campaign_id: campaignId,
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Database error creating campaign media:", error);
+      throw new Error(`Failed to create campaign media: ${error.message}`);
+    }
+
+    // Clear relevant caches
+    clearCache(`campaign_media_${campaignId}`);
+
+    return data;
+  } catch (error) {
+    console.error("Error in createCampaignMedia:", error);
     throw error;
   }
 }
