@@ -40,7 +40,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { searchCampaigns } from "@/lib/database";
-import { Campaign } from "@/lib/supabase";
+import { Tables } from "@/types/supabase";
+
+type Campaign = Tables<"campaigns">;
 
 type ViewMode = "grid" | "list";
 type SortOption = "newest" | "oldest" | "most_funded" | "ending_soon";
@@ -96,7 +98,18 @@ export default function CampaignsPage() {
         timeRemaining: timeRemaining !== "all" ? timeRemaining : undefined,
       });
 
-      setCampaigns(data);
+      // Convert database Campaign type to Supabase Campaign type
+      const convertedData = data.map(campaign => ({
+        ...campaign,
+        cover_image: campaign.cover_image || null,
+        current_funding: campaign.current_funding || 0,
+        owner_id: campaign.owner_id || '',
+        created_at: campaign.created_at || null,
+        updated_at: campaign.updated_at || null,
+        website: campaign.website || null,
+        owner_avatar: campaign.owner_avatar || null,
+      }));
+      setCampaigns(convertedData);
     } catch (error) {
       console.error("Error loading campaigns:", error);
       // Fallback to empty array for mock implementation
@@ -114,8 +127,9 @@ export default function CampaignsPage() {
     return Math.max(0, diffDays);
   };
 
-  const calculateFundingPercentage = (current: number, goal: number) => {
-    return Math.min(Math.round((current / goal) * 100), 100);
+  const calculateFundingPercentage = (current: number | null, goal: number) => {
+    const currentAmount = current || 0;
+    return Math.min(Math.round((currentAmount / goal) * 100), 100);
   };
 
   const [locationFilter, setLocationFilter] = useState("");
@@ -317,7 +331,7 @@ export default function CampaignsPage() {
                 </div>
                 <div className="text-right ml-4">
                   <div className="text-lg font-bold">
-                    ${campaign.current_funding.toLocaleString()}
+                    ${(campaign.current_funding || 0).toLocaleString()}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     of ${campaign.funding_goal.toLocaleString()}
@@ -398,7 +412,7 @@ export default function CampaignsPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="font-bold">
-                ${campaign.current_funding.toLocaleString()}
+                ${(campaign.current_funding || 0).toLocaleString()}
               </span>
               <span className="text-muted-foreground">
                 Goal: ${campaign.funding_goal.toLocaleString()}
