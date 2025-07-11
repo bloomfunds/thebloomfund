@@ -333,6 +333,54 @@ export type Database = {
           created_at?: string;
         };
         Relationships: [];
+      },
+      support_tickets: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          name: string;
+          email: string;
+          category: string;
+          subject: string;
+          message: string;
+          status: string;
+          priority: string;
+          assigned_to: string | null;
+          resolved_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          name: string;
+          email: string;
+          category: string;
+          subject: string;
+          message: string;
+          status?: string;
+          priority?: string;
+          assigned_to?: string | null;
+          resolved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          name?: string;
+          email?: string;
+          category?: string;
+          subject?: string;
+          message?: string;
+          status?: string;
+          priority?: string;
+          assigned_to?: string | null;
+          resolved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       }
     }
     Views: {

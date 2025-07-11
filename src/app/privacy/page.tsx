@@ -417,7 +417,7 @@ export default function PrivacyPage() {
                         Francisco, CA 94105
                       </p>
                       <p>
-                        <strong>Phone:</strong> 1-800-BLOOM-US
+
                       </p>
                     </div>
 

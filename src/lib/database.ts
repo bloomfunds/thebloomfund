@@ -81,6 +81,22 @@ export type CampaignMilestone = {
   created_at: string;
 };
 
+export type SupportTicket = {
+  id: string;
+  user_id?: string;
+  name: string;
+  email: string;
+  category: string;
+  subject: string;
+  message: string;
+  status: "open" | "in_progress" | "resolved" | "closed";
+  priority: "low" | "medium" | "high" | "urgent";
+  assigned_to?: string;
+  resolved_at?: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type User = {
   id: string;
   email: string;
@@ -841,6 +857,84 @@ export async function createCampaignMilestones(
     return (data || []).map(patchCampaignMilestoneFields);
   } catch (error) {
     console.error("Error in createCampaignMilestones:", error);
+    throw error;
+  }
+}
+
+// Support ticket functions
+export async function createSupportTicket(ticketData: Omit<SupportTicket, 'id' | 'created_at' | 'updated_at' | 'status' | 'priority'>): Promise<SupportTicket> {
+  try {
+    const { data, error } = await supabase
+      .from("support_tickets")
+      .insert([{
+        ...ticketData,
+        status: 'open',
+        priority: 'medium',
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Database error creating support ticket:", error);
+      throw new Error(`Failed to create support ticket: ${error.message}`);
+    }
+
+    return {
+      ...data,
+      created_at: data.created_at || new Date().toISOString(),
+      updated_at: data.updated_at || new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("Error in createSupportTicket:", error);
+    throw error;
+  }
+}
+
+export async function getSupportTicketsByUser(userId: string): Promise<SupportTicket[]> {
+  try {
+    const { data, error } = await supabase
+      .from("support_tickets")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Database error fetching user support tickets:", error);
+      throw new Error(`Failed to fetch support tickets: ${error.message}`);
+    }
+
+    return (data || []).map(ticket => ({
+      ...ticket,
+      created_at: ticket.created_at || new Date().toISOString(),
+      updated_at: ticket.updated_at || new Date().toISOString(),
+    }));
+  } catch (error) {
+    console.error("Error in getSupportTicketsByUser:", error);
+    throw error;
+  }
+}
+
+export async function updateSupportTicket(id: string, updates: Partial<SupportTicket>): Promise<SupportTicket> {
+  try {
+    const { data, error } = await supabase
+      .from("support_tickets")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Database error updating support ticket:", error);
+      throw new Error(`Failed to update support ticket: ${error.message}`);
+    }
+
+    return {
+      ...data,
+      created_at: data.created_at || new Date().toISOString(),
+      updated_at: data.updated_at || new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("Error in updateSupportTicket:", error);
     throw error;
   }
 }

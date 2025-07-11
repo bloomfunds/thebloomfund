@@ -176,6 +176,23 @@ CREATE TABLE campaign_shares (
     shared_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Support tickets table
+CREATE TABLE support_tickets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
+    priority VARCHAR(20) DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+    assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Analytics events table for comprehensive tracking
 CREATE TABLE analytics_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -217,6 +234,11 @@ CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
 CREATE INDEX idx_campaign_views_campaign_id ON campaign_views(campaign_id);
 CREATE INDEX idx_campaign_views_viewed_at ON campaign_views(viewed_at DESC);
 
+CREATE INDEX idx_support_tickets_user_id ON support_tickets(user_id);
+CREATE INDEX idx_support_tickets_status ON support_tickets(status);
+CREATE INDEX idx_support_tickets_category ON support_tickets(category);
+CREATE INDEX idx_support_tickets_created_at ON support_tickets(created_at DESC);
+
 CREATE INDEX idx_analytics_events_user_id ON analytics_events(user_id);
 CREATE INDEX idx_analytics_events_event_type ON analytics_events(event_type);
 CREATE INDEX idx_analytics_events_timestamp ON analytics_events(timestamp DESC);
@@ -243,6 +265,9 @@ CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_support_tickets_updated_at BEFORE UPDATE ON support_tickets
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Functions for common operations
@@ -303,6 +328,7 @@ ALTER TABLE campaign_updates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_follows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_bookmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
@@ -332,6 +358,17 @@ CREATE POLICY "Payments are viewable by campaign owner and donor" ON payments
 
 CREATE POLICY "Users can create payments" ON payments
     FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Support tickets are insertable by anyone" ON support_tickets
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Users can view their own support tickets" ON support_tickets
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can view all support tickets" ON support_tickets
+    FOR SELECT USING (
+        auth.uid() IN (SELECT id FROM users WHERE verified = TRUE AND email LIKE '%@thebloomfund.com')
+    );
 
 CREATE POLICY "Analytics events are insertable by authenticated users" ON analytics_events
     FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);

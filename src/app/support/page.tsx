@@ -33,6 +33,8 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { createSupportTicket } from "@/lib/database";
+import { getCurrentUser } from "@/lib/supabase";
 
 const supportCategories = [
   "General Question",
@@ -110,13 +112,28 @@ export default function SupportPage() {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Get current user if logged in
+      let userId: string | undefined;
+      try {
+        const { user } = await getCurrentUser();
+        userId = user?.id;
+      } catch (err) {
+        // User not logged in, that's okay for support tickets
+      }
 
-      // Mock successful submission
-      console.log("Support ticket submitted:", formData);
+      // Create support ticket in database
+      await createSupportTicket({
+        user_id: userId,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        category: formData.category,
+        subject: formData.subject.trim(),
+        message: formData.message.trim(),
+      });
+
       setIsSubmitted(true);
     } catch (err) {
+      console.error("Error creating support ticket:", err);
       setError("Failed to submit your request. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -326,15 +343,7 @@ export default function SupportPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <Phone className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Phone</p>
-                    <p className="text-sm text-muted-foreground">
-                      1-800-BLOOM-US
-                    </p>
-                  </div>
-                </div>
+
                 <div className="flex items-center space-x-3">
                   <Clock className="h-5 w-5 text-primary" />
                   <div>

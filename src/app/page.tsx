@@ -356,11 +356,62 @@ function ThreeDDashboard({ isMounted }: { isMounted: boolean }) {
 
 // Stats counter component
 function StatsCounter({ isMounted }: { isMounted: boolean }) {
+  const [stats, setStats] = useState({
+    entrepreneursFunded: 0,
+    totalFundsRaised: 0,
+    activeCampaigns: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Fetch real stats from database
+        const { supabase } = await import("@/lib/supabase");
+        
+        // Get total unique campaign owners
+        const { data: campaigns } = await supabase
+          .from('campaigns')
+          .select('owner_id, current_funding')
+          .eq('status', 'active');
+
+        // Get total funds raised
+        const { data: payments } = await supabase
+          .from('payments')
+          .select('amount')
+          .eq('status', 'succeeded');
+
+        const uniqueOwners = new Set(campaigns?.map(c => c.owner_id).filter(Boolean) || []);
+        const totalRaised = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+        const activeCount = campaigns?.length || 0;
+
+        setStats({
+          entrepreneursFunded: uniqueOwners.size,
+          totalFundsRaised: totalRaised,
+          activeCampaigns: activeCount
+        });
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        // Fallback to default values
+        setStats({
+          entrepreneursFunded: 0,
+          totalFundsRaised: 0,
+          activeCampaigns: 0
+        });
+      }
+    };
+
+    if (isMounted) {
+      fetchStats();
+    }
+  }, [isMounted]);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
       <div className="glass-premium p-6 text-center hover-lift transition-all duration-300 group rounded-3xl">
         <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-3" />
-        <div className="text-3xl font-bold gradient-text mb-2">10K+</div>
+        <div className="text-3xl font-bold gradient-text mb-2">
+          {stats.entrepreneursFunded > 0 ? `${stats.entrepreneursFunded}+` : '0'}
+        </div>
         <div className="text-gray-600 text-sm font-medium">
           Entrepreneurs Funded
         </div>
@@ -368,7 +419,9 @@ function StatsCounter({ isMounted }: { isMounted: boolean }) {
 
       <div className="glass-premium p-6 text-center hover-lift transition-all duration-300 group rounded-3xl">
         <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-3" />
-        <div className="text-3xl font-bold gradient-text mb-2">$25M</div>
+        <div className="text-3xl font-bold gradient-text mb-2">
+          ${(stats.totalFundsRaised / 1000000).toFixed(1)}M
+        </div>
         <div className="text-gray-600 text-sm font-medium">
           Total Funds Raised
         </div>
@@ -376,7 +429,9 @@ function StatsCounter({ isMounted }: { isMounted: boolean }) {
 
       <div className="glass-premium p-6 text-center hover-lift transition-all duration-300 group rounded-3xl">
         <Rocket className="w-8 h-8 text-green-600 mx-auto mb-3" />
-        <div className="text-3xl font-bold gradient-text mb-2">2.5K</div>
+        <div className="text-3xl font-bold gradient-text mb-2">
+          {stats.activeCampaigns}
+        </div>
         <div className="text-gray-600 text-sm font-medium">
           Active Campaigns
         </div>
