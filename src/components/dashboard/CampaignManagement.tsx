@@ -33,7 +33,7 @@ import {
   Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { getUserCampaigns } from "@/lib/database";
+import { getCampaignsByOwner } from "@/lib/database";
 
 interface Campaign {
   id: string;
@@ -64,7 +64,7 @@ export default function CampaignManagement({
 
   const fetchUserCampaigns = async () => {
     try {
-      const userCampaigns = await getUserCampaigns(userId);
+      const userCampaigns = await getCampaignsByOwner(userId);
       setCampaigns(userCampaigns);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
