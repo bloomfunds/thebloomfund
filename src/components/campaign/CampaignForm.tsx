@@ -246,11 +246,11 @@ export default function CampaignForm() {
     }
   };
 
-  const handleMediaUpdate = (mediaFiles: any[]) => {
+  const handleMediaUpdate = (mediaFiles: File[]) => {
     const media = mediaFiles.map((file) => ({
-      type: file.type as "image" | "video",
-      url: file.preview,
-      caption: file.file.name,
+      type: file.type.startsWith('image/') ? "image" as const : "video" as const,
+      url: URL.createObjectURL(file),
+      caption: file.name,
     }));
     setFormData({ ...formData, media });
   };
@@ -358,8 +358,8 @@ export default function CampaignForm() {
 
       setSubmitSuccess(true);
       setTimeout(() => {
-        // Redirect to campaigns page since individual campaign pages may not exist yet
-        router.push(`/campaigns`);
+        // Redirect to dashboard where users can manage their campaigns
+        router.push(`/dashboard`);
       }, 2000);
     } catch (error) {
       console.error("Campaign creation error:", error);
@@ -677,13 +677,8 @@ export default function CampaignForm() {
                   </p>
                   <MediaUploader
                     onMediaChange={handleMediaUpdate}
-                    maxFiles={10}
-                    acceptedFileTypes={[
-                      "image/jpeg",
-                      "image/png",
-                      "image/gif",
-                      "video/mp4",
-                    ]}
+                    maxFiles={5}
+                    acceptedTypes={["image/*", "video/*"]}
                   />
                 </div>
               </div>

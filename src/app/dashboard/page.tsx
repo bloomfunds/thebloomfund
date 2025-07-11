@@ -1,724 +1,386 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import WelcomeSection from "@/components/dashboard/WelcomeSection";
-import CampaignManagement from "@/components/dashboard/CampaignManagement";
-import PledgeTracking from "@/components/dashboard/PledgeTracking";
-import { getCurrentUser } from "@/lib/supabase";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import {
-  TrendingUp,
-  DollarSign,
-  Users,
-  Eye,
-  Heart,
-  MessageCircle,
-  Share2,
+import { 
+  Plus, 
+  TrendingUp, 
+  Users, 
+  DollarSign, 
   Calendar,
-  Target,
-  Award,
-  Settings,
-  Plus,
-  Edit3,
-  BarChart3,
-  Activity,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Zap,
-  Star,
-  ArrowUpRight,
-  ArrowDownRight,
-  Sparkles,
+  Eye,
+  Edit,
+  Trash2,
+  Loader2
 } from "lucide-react";
-import Link from "next/link";
-
-// Mock data for dashboard
-const mockCampaigns = [
-  {
-    id: 1,
-    title: "Revolutionary AI-Powered Coffee Roastery",
-    status: "active",
-    current_funding: 190000,
-    funding_goal: 200000,
-    backers: 1900,
-    days_remaining: 15,
-    cover_image:
-      "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&q=80",
-    created_at: "2024-01-15",
-  },
-  {
-    id: 2,
-    title: "Sustainable Urban Garden Kit",
-    status: "completed",
-    current_funding: 85000,
-    funding_goal: 75000,
-    backers: 850,
-    days_remaining: 0,
-    cover_image:
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&q=80",
-    created_at: "2023-11-20",
-  },
-  {
-    id: 3,
-    title: "Smart Home Security System",
-    status: "draft",
-    current_funding: 0,
-    funding_goal: 150000,
-    backers: 0,
-    days_remaining: 30,
-    cover_image:
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80",
-    created_at: "2024-02-01",
-  },
-];
-
-const analyticsData = [
-  { name: "Jan", funding: 12000, backers: 120 },
-  { name: "Feb", funding: 19000, backers: 190 },
-  { name: "Mar", funding: 25000, backers: 250 },
-  { name: "Apr", funding: 35000, backers: 350 },
-  { name: "May", funding: 45000, backers: 450 },
-  { name: "Jun", funding: 65000, backers: 650 },
-];
-
-const pieData = [
-  { name: "Technology", value: 45, color: "#0ea5e9" },
-  { name: "Food & Beverage", value: 30, color: "#10b981" },
-  { name: "Arts & Crafts", value: 15, color: "#f59e0b" },
-  { name: "Other", value: 10, color: "#ef4444" },
-];
-
-const recentActivity = [
-  {
-    type: "donation",
-    message: "Sarah Martinez backed your campaign with $500",
-    time: "2 hours ago",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&q=80",
-  },
-  {
-    type: "milestone",
-    message: "Your campaign reached 95% of funding goal!",
-    time: "5 hours ago",
-    avatar: null,
-  },
-  {
-    type: "comment",
-    message: "Michael Chen left a comment on your campaign",
-    time: "1 day ago",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80",
-  },
-  {
-    type: "share",
-    message: "Your campaign was shared 25 times today",
-    time: "2 days ago",
-    avatar: null,
-  },
-];
+import { supabase } from "@/lib/supabase";
+import { Campaign } from "@/lib/database";
+import { getCampaignsByOwner } from "@/lib/database";
 
 export default function DashboardPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState("30d");
-  const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    checkCurrentUser();
+    checkUser();
   }, []);
 
-  const checkCurrentUser = async () => {
+  const checkUser = async () => {
     try {
-      const { user } = await getCurrentUser();
-      setCurrentUser(user);
+      // Check for mock user first
+      if (typeof window !== 'undefined') {
+        const mockUser = localStorage.getItem('mockUser');
+        if (mockUser) {
+          const user = JSON.parse(mockUser);
+          setCurrentUser(user);
+          await loadUserCampaigns(user.id);
+          return;
+        }
+      }
+
+      // Try Supabase auth
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      
+      if (user) {
+        setCurrentUser(user);
+        await loadUserCampaigns(user.id);
+      } else {
+        // No user found, redirect to sign in
+        router.push('/auth/signin');
+      }
     } catch (error) {
       console.error("Error checking user:", error);
+      setError("Failed to load user data");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const totalFunding = mockCampaigns.reduce(
-    (sum, campaign) => sum + campaign.current_funding,
-    0,
-  );
-  const totalBackers = mockCampaigns.reduce(
-    (sum, campaign) => sum + campaign.backers,
-    0,
-  );
-  const activeCampaigns = mockCampaigns.filter(
-    (c) => c.status === "active",
-  ).length;
-  const completedCampaigns = mockCampaigns.filter(
-    (c) => c.status === "completed",
-  ).length;
+  const loadUserCampaigns = async (userId: string) => {
+    try {
+      const userCampaigns = await getCampaignsByOwner(userId);
+      setCampaigns(userCampaigns);
+    } catch (error) {
+      console.error("Error loading campaigns:", error);
+      setError("Failed to load campaigns");
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      // Clear mock user
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('mockUser');
+      }
+      
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const calculateProgress = (current: number, goal: number) => {
+    return Math.min((current / goal) * 100, 100);
+  };
+
+  const getDaysRemaining = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-lg font-medium text-muted-foreground">
-            Loading your dashboard...
-          </p>
-        </div>
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin mr-2 text-primary" />
+            <span className="text-lg font-medium">Loading dashboard...</span>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="text-center py-12">
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="text-center py-12">
+            <p className="text-muted-foreground mb-4">Please sign in to access your dashboard</p>
+            <Button onClick={() => router.push('/auth/signin')}>
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const totalFunding = campaigns.reduce((sum, campaign) => sum + campaign.current_funding, 0);
+  const totalGoal = campaigns.reduce((sum, campaign) => sum + campaign.funding_goal, 0);
+  const activeCampaigns = campaigns.filter(c => c.status === 'active').length;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-background pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Enhanced Sidebar */}
-          <div className="lg:col-span-1">
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-3xl sticky top-24">
-              <CardContent className="p-6">
-                <div className="space-y-2">
-                  <Button
-                    variant={activeTab === "overview" ? "default" : "ghost"}
-                    className={`w-full justify-start ${
-                      activeTab === "overview"
-                        ? "premium-button"
-                        : "hover:bg-green-50"
-                    }`}
-                    onClick={() => setActiveTab("overview")}
-                  >
-                    <BarChart3 className="w-4 h-4 mr-3" />
-                    Overview
-                  </Button>
-                  <Button
-                    variant={activeTab === "campaigns" ? "default" : "ghost"}
-                    className={`w-full justify-start ${
-                      activeTab === "campaigns"
-                        ? "premium-button"
-                        : "hover:bg-green-50"
-                    }`}
-                    onClick={() => setActiveTab("campaigns")}
-                  >
-                    <Target className="w-4 h-4 mr-3" />
-                    My Campaigns
-                  </Button>
-                  <Button
-                    variant={activeTab === "pledges" ? "default" : "ghost"}
-                    className={`w-full justify-start ${
-                      activeTab === "pledges"
-                        ? "premium-button"
-                        : "hover:bg-green-50"
-                    }`}
-                    onClick={() => setActiveTab("pledges")}
-                  >
-                    <Heart className="w-4 h-4 mr-3" />
-                    My Pledges
-                  </Button>
-                  <Button
-                    variant={activeTab === "rewards" ? "default" : "ghost"}
-                    className={`w-full justify-start ${
-                      activeTab === "rewards"
-                        ? "premium-button"
-                        : "hover:bg-green-50"
-                    }`}
-                    onClick={() => setActiveTab("rewards")}
-                  >
-                    <Award className="w-4 h-4 mr-3" />
-                    Claim Rewards
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start hover:bg-green-50"
-                    asChild
-                  >
-                    <Link href="/dashboard/settings">
-                      <Settings className="w-4 h-4 mr-3" />
-                      Settings
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold gradient-text-hero mb-2">
+              Dashboard
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Welcome back, {currentUser.full_name || currentUser.email?.split('@')[0] || 'User'}
+            </p>
           </div>
-
-          {/* Enhanced Main Content */}
-          <div className="lg:col-span-4 space-y-8">
-            {/* Dynamic Content Based on Active Tab */}
-            {activeTab === "overview" && (
-              <>
-                {/* Welcome Section */}
-                <WelcomeSection
-                  user={currentUser}
-                  stats={{
-                    totalCampaigns: mockCampaigns.length,
-                    totalRaised: totalFunding,
-                    totalBackers: totalBackers,
-                    activeCampaigns: activeCampaigns,
-                  }}
-                />
-
-                {/* Enhanced Analytics and Dashboard Content */}
-                <div className="space-y-8">
-                  {/* Analytics Chart */}
-                  <Card className="bg-white border-0 shadow-2xl rounded-3xl">
-                    <CardHeader className="pb-8 bg-gradient-to-r from-slate-900 to-gray-900 text-white rounded-t-3xl">
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div>
-                          <CardTitle className="text-3xl font-black mb-2">
-                            Analytics Overview
-                          </CardTitle>
-                          <p className="text-gray-300 text-lg font-medium">
-                            Track your campaign performance over time
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant={
-                              selectedPeriod === "7d" ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => setSelectedPeriod("7d")}
-                            className={
-                              selectedPeriod === "7d"
-                                ? "bg-green-500 hover:bg-green-600"
-                                : "border-white/30 text-white hover:bg-white/10"
-                            }
-                          >
-                            7D
-                          </Button>
-                          <Button
-                            variant={
-                              selectedPeriod === "30d" ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => setSelectedPeriod("30d")}
-                            className={
-                              selectedPeriod === "30d"
-                                ? "bg-green-500 hover:bg-green-600"
-                                : "border-white/30 text-white hover:bg-white/10"
-                            }
-                          >
-                            30D
-                          </Button>
-                          <Button
-                            variant={
-                              selectedPeriod === "90d" ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => setSelectedPeriod("90d")}
-                            className={
-                              selectedPeriod === "90d"
-                                ? "bg-green-500 hover:bg-green-600"
-                                : "border-white/30 text-white hover:bg-white/10"
-                            }
-                          >
-                            90D
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                      <div className="h-96">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={analyticsData}>
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                              stroke="#f0f0f0"
-                            />
-                            <XAxis
-                              dataKey="name"
-                              stroke="#6b7280"
-                              fontSize={12}
-                              fontWeight={600}
-                            />
-                            <YAxis
-                              stroke="#6b7280"
-                              fontSize={12}
-                              fontWeight={600}
-                            />
-                            <Tooltip
-                              contentStyle={{
-                                backgroundColor: "white",
-                                border: "none",
-                                borderRadius: "16px",
-                                boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
-                                fontWeight: 600,
-                              }}
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="funding"
-                              stroke="#10b981"
-                              strokeWidth={4}
-                              dot={{ fill: "#10b981", strokeWidth: 3, r: 8 }}
-                              activeDot={{
-                                r: 10,
-                                stroke: "#10b981",
-                                strokeWidth: 3,
-                              }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Campaign Management */}
-                  <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-2xl rounded-3xl">
-                    <CardHeader className="pb-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-2xl font-bold">
-                            Your Campaigns
-                          </CardTitle>
-                          <CardDescription className="text-base">
-                            Manage and track all your campaigns
-                          </CardDescription>
-                        </div>
-                        <Button className="premium-button" asChild>
-                          <Link href="/campaign/create">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create New
-                          </Link>
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {mockCampaigns.map((campaign) => {
-                        const fundingPercentage = Math.min(
-                          Math.round(
-                            (campaign.current_funding / campaign.funding_goal) *
-                              100,
-                          ),
-                          100,
-                        );
-
-                        return (
-                          <div
-                            key={campaign.id}
-                            className="flex items-center gap-4 p-6 rounded-2xl bg-gradient-to-r from-gray-50/50 to-transparent hover:from-gray-50 transition-all duration-300 border border-gray-100/50"
-                          >
-                            <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0">
-                              <img
-                                src={campaign.cover_image}
-                                alt={campaign.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="font-semibold text-lg truncate">
-                                  {campaign.title}
-                                </h3>
-                                <Badge
-                                  variant={
-                                    campaign.status === "active"
-                                      ? "default"
-                                      : campaign.status === "completed"
-                                        ? "secondary"
-                                        : "outline"
-                                  }
-                                  className={
-                                    campaign.status === "active"
-                                      ? "bg-green-100 text-green-700"
-                                      : campaign.status === "completed"
-                                        ? "bg-blue-100 text-blue-700"
-                                        : "bg-gray-100 text-gray-700"
-                                  }
-                                >
-                                  {campaign.status === "active" ? (
-                                    <>
-                                      <Activity className="w-3 h-3 mr-1" />
-                                      Active
-                                    </>
-                                  ) : campaign.status === "completed" ? (
-                                    <>
-                                      <CheckCircle className="w-3 h-3 mr-1" />
-                                      Completed
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Clock className="w-3 h-3 mr-1" />
-                                      Draft
-                                    </>
-                                  )}
-                                </Badge>
-                              </div>
-                              <div className="grid grid-cols-3 gap-4 mb-3">
-                                <div>
-                                  <p className="text-sm text-muted-foreground">
-                                    Raised
-                                  </p>
-                                  <p className="font-semibold">
-                                    $
-                                    {(campaign.current_funding / 1000).toFixed(
-                                      0,
-                                    )}
-                                    K
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">
-                                    Backers
-                                  </p>
-                                  <p className="font-semibold">
-                                    {campaign.backers}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">
-                                    Days Left
-                                  </p>
-                                  <p className="font-semibold">
-                                    {campaign.days_remaining}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                  <span>{fundingPercentage}% funded</span>
-                                  <span className="text-muted-foreground">
-                                    Goal: $
-                                    {(campaign.funding_goal / 1000).toFixed(0)}K
-                                  </span>
-                                </div>
-                                <Progress
-                                  value={fundingPercentage}
-                                  className="h-2"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              <Button size="sm" variant="outline" asChild>
-                                <Link href={`/campaigns/${campaign.id}`}>
-                                  <Eye className="w-4 h-4 mr-2" />
-                                  View
-                                </Link>
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <Edit3 className="w-4 h-4 mr-2" />
-                                Edit
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </CardContent>
-                  </Card>
-
-                  {/* Recent Activity */}
-                  <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-2xl rounded-3xl">
-                    <CardHeader className="pb-6">
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <Activity className="w-5 h-5 text-primary" />
-                        Recent Activity
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {recentActivity.map((activity, index) => (
-                        <div
-                          key={index}
-                          className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50/50 transition-colors"
-                        >
-                          {activity.avatar ? (
-                            <Avatar className="w-10 h-10">
-                              <AvatarImage src={activity.avatar} />
-                              <AvatarFallback>
-                                {activity.message.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                          ) : (
-                            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                              {activity.type === "milestone" && (
-                                <Target className="w-5 h-5 text-white" />
-                              )}
-                              {activity.type === "share" && (
-                                <Share2 className="w-5 h-5 text-white" />
-                              )}
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium leading-relaxed">
-                              {activity.message}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {activity.time}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-
-                  {/* Category Performance */}
-                  <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-2xl rounded-3xl">
-                    <CardHeader className="pb-6">
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <BarChart3 className="w-5 h-5 text-primary" />
-                        Category Performance
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={pieData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={100}
-                              paddingAngle={5}
-                              dataKey="value"
-                            >
-                              {pieData.map((entry, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={entry.color}
-                                />
-                              ))}
-                            </Pie>
-                            <Tooltip
-                              contentStyle={{
-                                backgroundColor: "white",
-                                border: "none",
-                                borderRadius: "12px",
-                                boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-                              }}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="space-y-3 mt-4">
-                        {pieData.map((item, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: item.color }}
-                              />
-                              <span className="text-sm font-medium">
-                                {item.name}
-                              </span>
-                            </div>
-                            <span className="text-sm text-muted-foreground">
-                              {item.value}%
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Quick Actions */}
-                  <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-2xl rounded-3xl">
-                    <CardHeader className="pb-6">
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <Zap className="w-5 h-5 text-primary" />
-                        Quick Actions
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Button
-                        className="w-full justify-start"
-                        variant="outline"
-                        asChild
-                      >
-                        <Link href="/campaign/create">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Create New Campaign
-                        </Link>
-                      </Button>
-                      <Button
-                        className="w-full justify-start"
-                        variant="outline"
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Message Backers
-                      </Button>
-                      <Button
-                        className="w-full justify-start"
-                        variant="outline"
-                      >
-                        <Share2 className="w-4 h-4 mr-2" />
-                        Share Campaign
-                      </Button>
-                      <Button
-                        className="w-full justify-start"
-                        variant="outline"
-                        asChild
-                      >
-                        <Link href="/dashboard/settings">
-                          <Settings className="w-4 h-4 mr-2" />
-                          Account Settings
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
-            )}
-
-            {activeTab === "campaigns" && (
-              <CampaignManagement userId={currentUser?.id} />
-            )}
-
-            {activeTab === "pledges" && (
-              <PledgeTracking userId={currentUser?.id} />
-            )}
-
-            {activeTab === "rewards" && (
-              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="text-2xl font-bold">
-                    Claim Rewards
-                  </CardTitle>
-                  <p className="text-muted-foreground">
-                    Manage and claim your campaign rewards
-                  </p>
-                </CardHeader>
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Award className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Reward System Coming Soon
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    We're building an advanced reward claiming system. Check
-                    back soon!
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+          <div className="flex gap-3">
+            <Button onClick={() => router.push('/campaign/create')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Campaign
+            </Button>
+            <Button variant="outline" onClick={handleSignOut}>
+              Sign Out
+            </Button>
           </div>
         </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Funding</p>
+                  <p className="text-2xl font-bold">{formatCurrency(totalFunding)}</p>
+                </div>
+                <DollarSign className="w-8 h-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Active Campaigns</p>
+                  <p className="text-2xl font-bold">{activeCampaigns}</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Campaigns</p>
+                  <p className="text-2xl font-bold">{campaigns.length}</p>
+                </div>
+                <Users className="w-8 h-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
+                  <p className="text-2xl font-bold">
+                    {totalGoal > 0 ? Math.round((totalFunding / totalGoal) * 100) : 0}%
+                  </p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Campaigns Tabs */}
+        <Tabs defaultValue="active" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="active">Active Campaigns</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="drafts">Drafts</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="active" className="space-y-6">
+            {campaigns.filter(c => c.status === 'active').length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">No active campaigns yet</p>
+                  <Button onClick={() => router.push('/campaign/create')}>
+                    Create Your First Campaign
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {campaigns
+                  .filter(c => c.status === 'active')
+                  .map((campaign) => (
+                    <Card key={campaign.id} className="overflow-hidden">
+                      {campaign.cover_image && (
+                        <div className="aspect-video bg-muted">
+                          <img
+                            src={campaign.cover_image}
+                            alt={campaign.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <CardTitle className="text-xl mb-2">{campaign.title}</CardTitle>
+                            <CardDescription className="line-clamp-2">
+                              {campaign.description}
+                            </CardDescription>
+                          </div>
+                          <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
+                            {campaign.status}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Progress</span>
+                            <span>{formatCurrency(campaign.current_funding)} / {formatCurrency(campaign.funding_goal)}</span>
+                          </div>
+                          <Progress value={calculateProgress(campaign.current_funding, campaign.funding_goal)} />
+                        </div>
+                        
+                        <div className="flex justify-between items-center text-sm text-muted-foreground">
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            {getDaysRemaining(campaign.end_date)} days left
+                          </div>
+                          <div className="flex items-center">
+                            <Eye className="w-4 h-4 mr-1" />
+                            View Campaign
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1">
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button size="sm" variant="outline" className="flex-1">
+                            <TrendingUp className="w-4 h-4 mr-2" />
+                            Analytics
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="completed" className="space-y-6">
+            {campaigns.filter(c => c.status === 'completed').length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <p className="text-muted-foreground">No completed campaigns yet</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {campaigns
+                  .filter(c => c.status === 'completed')
+                  .map((campaign) => (
+                    <Card key={campaign.id} className="overflow-hidden">
+                      <CardHeader>
+                        <CardTitle>{campaign.title}</CardTitle>
+                        <CardDescription>{campaign.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-between items-center">
+                          <span>Final Funding: {formatCurrency(campaign.current_funding)}</span>
+                          <Badge variant="secondary">Completed</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="drafts" className="space-y-6">
+            {campaigns.filter(c => c.status === 'draft').length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <p className="text-muted-foreground">No draft campaigns</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {campaigns
+                  .filter(c => c.status === 'draft')
+                  .map((campaign) => (
+                    <Card key={campaign.id} className="overflow-hidden">
+                      <CardHeader>
+                        <CardTitle>{campaign.title}</CardTitle>
+                        <CardDescription>{campaign.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline">
+                            <Edit className="w-4 h-4 mr-2" />
+                            Continue Editing
+                          </Button>
+                          <Button size="sm" variant="destructive">
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

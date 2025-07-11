@@ -113,7 +113,7 @@ export default function SignUpPage() {
         return !!(
           formData.fullName.trim() &&
           formData.email.trim() &&
-          formData.password.length >= 6 &&
+          formData.password.length >= 8 &&
           formData.password === formData.confirmPassword
         );
       case "profile":
@@ -347,7 +347,7 @@ export default function SignUpPage() {
                       <Input
                         id="password"
                         type="password"
-                        placeholder="Create a password (min. 6 characters)"
+                        placeholder="Create a password (min. 8 characters)"
                         value={formData.password}
                         onChange={(e) =>
                           setFormData({ ...formData, password: e.target.value })
@@ -355,6 +355,9 @@ export default function SignUpPage() {
                         required
                         disabled={isLoading}
                       />
+                      {formData.password.length > 0 && formData.password.length < 8 && (
+                        <p className="text-sm text-red-500">Password must be at least 8 characters</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword">

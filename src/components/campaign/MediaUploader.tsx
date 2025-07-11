@@ -1,248 +1,216 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { X, Upload, Image as ImageIcon, Video, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Upload, X, Image as ImageIcon, Video, File } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface MediaFile {
-  id: string;
-  file: File;
-  preview: string;
-  type: "image" | "video";
-}
-
 interface MediaUploaderProps {
-  onMediaChange?: (media: MediaFile[]) => void;
+  onMediaChange: (media: File[]) => void;
   maxFiles?: number;
-  acceptedFileTypes?: string[];
-  initialMedia?: MediaFile[];
+  acceptedTypes?: string[];
+  className?: string;
 }
 
-const MediaUploader = ({
-  onMediaChange = () => {},
+export default function MediaUploader({
+  onMediaChange,
   maxFiles = 5,
-  acceptedFileTypes = ["image/jpeg", "image/png", "image/gif", "video/mp4"],
-  initialMedia = [],
-}: MediaUploaderProps) => {
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(initialMedia);
-  const [isDragging, setIsDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  acceptedTypes = ["image/*", "video/*"],
+  className,
+}: MediaUploaderProps) {
+  const [files, setFiles] = useState<File[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
-
-  const handleDragOver = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!isDragging) {
-        setIsDragging(true);
+  const handleFiles = (newFiles: FileList | File[]) => {
+    const fileArray = Array.from(newFiles);
+    const validFiles = fileArray.filter(file => {
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+        return false;
       }
-    },
-    [isDragging],
-  );
-
-  const processFiles = useCallback(
-    (files: FileList | null) => {
-      if (!files) return;
-
-      setError(null);
-
-      // Check if adding these files would exceed the limit
-      if (mediaFiles.length + files.length > maxFiles) {
-        setError(`You can only upload a maximum of ${maxFiles} files`);
-        return;
-      }
-
-      const newMediaFiles: MediaFile[] = [];
-
-      Array.from(files).forEach((file) => {
-        // Check file type
-        if (!acceptedFileTypes.includes(file.type)) {
-          setError(`File type ${file.type} is not supported`);
-          return;
+      
+      // Check file type
+      const isValidType = acceptedTypes.some(type => {
+        if (type.endsWith('/*')) {
+          const baseType = type.replace('/*', '');
+          return file.type.startsWith(baseType);
         }
-
-        // Check file size (limit to 10MB)
-        if (file.size > 10 * 1024 * 1024) {
-          setError("Files must be less than 10MB");
-          return;
-        }
-
-        const fileType = file.type.startsWith("image/") ? "image" : "video";
-        const preview = URL.createObjectURL(file);
-
-        newMediaFiles.push({
-          id: `${Date.now()}-${file.name}`,
-          file,
-          preview,
-          type: fileType,
-        });
+        return file.type === type;
       });
-
-      const updatedMediaFiles = [...mediaFiles, ...newMediaFiles];
-      setMediaFiles(updatedMediaFiles);
-      onMediaChange(updatedMediaFiles);
-    },
-    [mediaFiles, maxFiles, acceptedFileTypes, onMediaChange],
-  );
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(false);
-
-      const { files } = e.dataTransfer;
-      processFiles(files);
-    },
-    [processFiles],
-  );
-
-  const handleFileInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { files } = e.target;
-      processFiles(files);
-      // Reset the input value so the same file can be uploaded again if removed
-      e.target.value = "";
-    },
-    [processFiles],
-  );
-
-  const removeFile = useCallback(
-    (id: string) => {
-      const updatedFiles = mediaFiles.filter((file) => file.id !== id);
-      setMediaFiles(updatedFiles);
-      onMediaChange(updatedFiles);
-
-      // Revoke the object URL to avoid memory leaks
-      const fileToRemove = mediaFiles.find((file) => file.id === id);
-      if (fileToRemove) {
-        URL.revokeObjectURL(fileToRemove.preview);
+      
+      if (!isValidType) {
+        alert(`File ${file.name} is not a supported type.`);
+        return false;
       }
-    },
-    [mediaFiles, onMediaChange],
-  );
+      
+      return true;
+    });
+
+    const updatedFiles = [...files, ...validFiles].slice(0, maxFiles);
+    setFiles(updatedFiles);
+    onMediaChange(updatedFiles);
+    
+    // Simulate upload progress
+    validFiles.forEach(file => {
+      setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          const current = prev[file.name] || 0;
+          if (current >= 100) {
+            clearInterval(interval);
+            return prev;
+          }
+          return { ...prev, [file.name]: current + 10 };
+        });
+      }, 100);
+    });
+  };
+
+  const removeFile = (index: number) => {
+    const updatedFiles = files.filter((_, i) => i !== index);
+    setFiles(updatedFiles);
+    onMediaChange(updatedFiles);
+    
+    // Remove progress for deleted file
+    const fileName = files[index].name;
+    setUploadProgress(prev => {
+      const newProgress = { ...prev };
+      delete newProgress[fileName];
+      return newProgress;
+    });
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFiles(e.dataTransfer.files);
+    }
+  };
+
+  const getFileIcon = (file: File) => {
+    if (file.type.startsWith('image/')) return <ImageIcon className="w-4 h-4" />;
+    if (file.type.startsWith('video/')) return <Video className="w-4 h-4" />;
+    return <File className="w-4 h-4" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   return (
-    <div className="w-full space-y-4 bg-background">
+    <div className={cn("space-y-4", className)}>
+      <Label>Media Files</Label>
+      
+      {/* Upload Area */}
       <div
         className={cn(
-          "relative flex min-h-[200px] w-full flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors",
-          isDragging
+          "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+          dragActive
             ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25",
+            : "border-muted-foreground/25 hover:border-primary/50",
+          files.length >= maxFiles && "opacity-50 pointer-events-none"
         )}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
         onDrop={handleDrop}
       >
-        <div className="flex flex-col items-center justify-center space-y-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Upload className="h-6 w-6 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium">
-              Drag and drop files here or click to upload
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Supported formats: JPG, PNG, GIF, MP4 (Max {maxFiles} files, 10MB
-              each)
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => document.getElementById("file-upload")?.click()}
+        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground mb-2">
+          Drag and drop files here, or{" "}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="text-primary hover:underline"
+            disabled={files.length >= maxFiles}
           >
-            Select Files
-          </Button>
-          <input
-            id="file-upload"
-            type="file"
-            multiple
-            accept={acceptedFileTypes.join(",")}
-            className="hidden"
-            onChange={handleFileInputChange}
-          />
-        </div>
+            browse
+          </button>
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Max {maxFiles} files, 10MB each. Supported: Images, Videos
+        </p>
+        
+        <Input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept={acceptedTypes.join(',')}
+          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          className="hidden"
+          disabled={files.length >= maxFiles}
+        />
       </div>
 
-      {error && (
-        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-
-      {mediaFiles.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">
-            Uploaded Media ({mediaFiles.length}/{maxFiles})
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {mediaFiles.map((media) => (
-              <Card key={media.id} className="overflow-hidden">
-                <div className="relative aspect-video w-full bg-muted">
-                  {media.type === "image" ? (
-                    <img
-                      src={media.preview}
-                      alt="Preview"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <video
-                      src={media.preview}
-                      controls
-                      className="h-full w-full object-cover"
-                    />
+      {/* File List */}
+      {files.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Uploaded Files ({files.length}/{maxFiles})</Label>
+          <div className="space-y-2">
+            {files.map((file, index) => (
+              <div
+                key={`${file.name}-${index}`}
+                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+              >
+                <div className="flex items-center space-x-3">
+                  {getFileIcon(file)}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(file.size)}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {/* Upload Progress */}
+                  {uploadProgress[file.name] !== undefined && uploadProgress[file.name] < 100 && (
+                    <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-300"
+                        style={{ width: `${uploadProgress[file.name]}%` }}
+                      />
+                    </div>
                   )}
+                  
+                  {/* Remove Button */}
                   <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute right-2 top-2 h-7 w-7"
-                    onClick={() => removeFile(media.id)}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFile(index)}
+                    className="h-8 w-8 p-0"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="w-4 h-4" />
                   </Button>
                 </div>
-                <CardContent className="p-3">
-                  <p className="truncate text-sm">{media.file.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(media.file.size / (1024 * 1024)).toFixed(2)} MB
-                  </p>
-                </CardContent>
-              </Card>
+              </div>
             ))}
-
-            {mediaFiles.length < maxFiles && (
-              <Card
-                className="flex h-full min-h-[200px] cursor-pointer items-center justify-center overflow-hidden border-2 border-dashed border-muted-foreground/25 transition-colors hover:border-primary/50 hover:bg-primary/5"
-                onClick={() => document.getElementById("file-upload")?.click()}
-              >
-                <div className="flex flex-col items-center justify-center space-y-2 p-6 text-center">
-                  <div className="rounded-full bg-primary/10 p-2">
-                    <Plus className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="text-sm font-medium">Add More</p>
-                </div>
-              </Card>
-            )}
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default MediaUploader;
+}
