@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   Plus, 
-  TrendingUp, 
+  TrendingUp,
   Users, 
-  DollarSign, 
+  DollarSign,
   Calendar,
   Eye,
   Edit,
@@ -51,7 +51,7 @@ export default function DashboardPage() {
       if (error) throw error;
       
       if (user) {
-        setCurrentUser(user);
+      setCurrentUser(user);
         await loadUserCampaigns(user.id);
       } else {
         // No user found, redirect to sign in
@@ -134,7 +134,7 @@ export default function DashboardPage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+        </div>
     );
   }
 
@@ -174,10 +174,10 @@ export default function DashboardPage() {
             <Button onClick={() => router.push('/campaign/create')}>
               <Plus className="w-4 h-4 mr-2" />
               Create Campaign
-            </Button>
+                  </Button>
             <Button variant="outline" onClick={handleSignOut}>
               Sign Out
-            </Button>
+                  </Button>
           </div>
         </div>
 
@@ -191,19 +191,19 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold">{formatCurrency(totalFunding)}</p>
                 </div>
                 <DollarSign className="w-8 h-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
           
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <div>
+                        <div>
                   <p className="text-sm font-medium text-muted-foreground">Active Campaigns</p>
                   <p className="text-2xl font-bold">{activeCampaigns}</p>
-                </div>
+                        </div>
                 <TrendingUp className="w-8 h-8 text-primary" />
-              </div>
+                        </div>
             </CardContent>
           </Card>
           
@@ -213,26 +213,26 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Campaigns</p>
                   <p className="text-2xl font-bold">{campaigns.length}</p>
-                </div>
+                      </div>
                 <Users className="w-8 h-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-          
+                      </div>
+                    </CardContent>
+                  </Card>
+
           <Card>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
+                      <div className="flex items-center justify-between">
+                        <div>
                   <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
                   <p className="text-2xl font-bold">
                     {totalGoal > 0 ? Math.round((totalFunding / totalGoal) * 100) : 0}%
                   </p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-primary" />
-              </div>
+                        </div>
             </CardContent>
           </Card>
-        </div>
+                      </div>
 
         {/* Campaigns Tabs */}
         <Tabs defaultValue="active" className="space-y-6">
@@ -260,12 +260,12 @@ export default function DashboardPage() {
                     <Card key={campaign.id} className="overflow-hidden">
                       {campaign.cover_image && (
                         <div className="aspect-video bg-muted">
-                          <img
-                            src={campaign.cover_image}
-                            alt={campaign.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                              <img
+                                src={campaign.cover_image}
+                                alt={campaign.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                       )}
                       <CardHeader>
                         <div className="flex justify-between items-start">
@@ -277,17 +277,17 @@ export default function DashboardPage() {
                           </div>
                           <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
                             {campaign.status}
-                          </Badge>
-                        </div>
+                                </Badge>
+                              </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
                             <span>Progress</span>
                             <span>{formatCurrency(campaign.current_funding || 0)} / {formatCurrency(campaign.funding_goal)}</span>
-                          </div>
+                                </div>
                           <Progress value={calculateProgress(campaign.current_funding || 0, campaign.funding_goal)} />
-                        </div>
+                              </div>
                         
                         <div className="flex justify-between items-center text-sm text-muted-foreground">
                           <div className="flex items-center">
@@ -322,8 +322,8 @@ export default function DashboardPage() {
               <Card>
                 <CardContent className="text-center py-12">
                   <p className="text-muted-foreground">No completed campaigns yet</p>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {campaigns
@@ -333,16 +333,16 @@ export default function DashboardPage() {
                       <CardHeader>
                         <CardTitle>{campaign.title}</CardTitle>
                         <CardDescription>{campaign.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
+                    </CardHeader>
+                    <CardContent>
                         <div className="flex justify-between items-center">
                           <span>Final Funding: {formatCurrency(campaign.current_funding || 0)}</span>
                           <Badge variant="secondary">Completed</Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
                   ))}
-              </div>
+                </div>
             )}
           </TabsContent>
 

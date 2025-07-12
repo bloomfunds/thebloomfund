@@ -34,7 +34,7 @@ export default function MediaUploader({
         return false;
       }
       
-      // Check file type
+        // Check file type
       const isValidType = acceptedTypes.some(type => {
         if (type.endsWith('/*')) {
           const baseType = type.replace('/*', '');
@@ -86,8 +86,8 @@ export default function MediaUploader({
   };
 
   const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
     } else if (e.type === "dragleave") {
@@ -148,20 +148,20 @@ export default function MediaUploader({
           >
             browse
           </button>
-        </p>
-        <p className="text-xs text-muted-foreground">
+            </p>
+            <p className="text-xs text-muted-foreground">
           Max {maxFiles} files, 10MB each. Supported: Images, Videos
         </p>
         
         <Input
           ref={fileInputRef}
-          type="file"
-          multiple
+            type="file"
+            multiple
           accept={acceptedTypes.join(',')}
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
-          className="hidden"
+            className="hidden"
           disabled={files.length >= maxFiles}
-        />
+          />
       </div>
 
       {/* File List */}
@@ -182,7 +182,7 @@ export default function MediaUploader({
                       {formatFileSize(file.size)}
                     </p>
                   </div>
-                </div>
+        </div>
                 
                 <div className="flex items-center space-x-2">
                   {/* Upload Progress */}
