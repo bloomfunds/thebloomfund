@@ -83,7 +83,7 @@ export type CampaignMilestone = {
 
 export type SupportTicket = {
   id: string;
-  user_id?: string;
+  user_id?: string | null;
   name: string;
   email: string;
   category: string;
@@ -91,8 +91,8 @@ export type SupportTicket = {
   message: string;
   status: "open" | "in_progress" | "resolved" | "closed";
   priority: "low" | "medium" | "high" | "urgent";
-  assigned_to?: string;
-  resolved_at?: string;
+  assigned_to?: string | null;
+  resolved_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -881,6 +881,8 @@ export async function createSupportTicket(ticketData: Omit<SupportTicket, 'id' |
 
     return {
       ...data,
+      status: data.status as "open" | "in_progress" | "resolved" | "closed",
+      priority: data.priority as "low" | "medium" | "high" | "urgent",
       created_at: data.created_at || new Date().toISOString(),
       updated_at: data.updated_at || new Date().toISOString(),
     };
@@ -905,6 +907,8 @@ export async function getSupportTicketsByUser(userId: string): Promise<SupportTi
 
     return (data || []).map(ticket => ({
       ...ticket,
+      status: ticket.status as "open" | "in_progress" | "resolved" | "closed",
+      priority: ticket.priority as "low" | "medium" | "high" | "urgent",
       created_at: ticket.created_at || new Date().toISOString(),
       updated_at: ticket.updated_at || new Date().toISOString(),
     }));
@@ -930,6 +934,8 @@ export async function updateSupportTicket(id: string, updates: Partial<SupportTi
 
     return {
       ...data,
+      status: data.status as "open" | "in_progress" | "resolved" | "closed",
+      priority: data.priority as "low" | "medium" | "high" | "urgent",
       created_at: data.created_at || new Date().toISOString(),
       updated_at: data.updated_at || new Date().toISOString(),
     };
