@@ -164,6 +164,23 @@ const categories = [
       "Eco Solutions",
     ],
   },
+  {
+    id: "other",
+    name: "Other",
+    description: "Unique and innovative businesses that don't fit traditional categories",
+    icon: BookOpen,
+    color: "from-gray-500 to-slate-600",
+    campaigns: 156,
+    totalFunded: "$3.2M",
+    image:
+      "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&q=80",
+    examples: [
+      "Innovation Projects",
+      "Unique Ventures",
+      "Emerging Industries",
+      "Specialized Services",
+    ],
+  },
 ];
 
 export default function CategoriesPage() {
@@ -185,7 +202,7 @@ export default function CategoriesPage() {
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center space-y-4 text-center">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl gradient-text-hero">
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl gradient-text-hero pb-2">
                 Explore Categories
               </h1>
               <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
@@ -359,7 +376,7 @@ export default function CategoriesPage() {
                       </div>
                     </div>
                     <Button asChild variant="outline" className="w-full">
-                      <Link href={`/campaigns?category=${category.id}`}>
+                      <Link href={`/campaigns?category=${category.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}>
                         View Campaigns
                       </Link>
                     </Button>

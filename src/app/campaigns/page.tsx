@@ -66,6 +66,28 @@ export default function CampaignsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  // Handle URL parameters for category filtering
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const categoryParam = urlParams.get('category');
+      if (categoryParam) {
+        // Convert URL-friendly category back to display format
+        const categoryMap: { [key: string]: string } = {
+          'technology': 'Technology',
+          'food-beverage': 'Food & Beverage',
+          'retail': 'Retail',
+          'services': 'Services',
+          'manufacturing': 'Manufacturing',
+          'sustainability': 'Sustainability',
+          'other': 'Other'
+        };
+        const displayCategory = categoryMap[categoryParam] || 'Other';
+        setSelectedCategory(displayCategory);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     loadCampaigns();
   }, [searchQuery, selectedCategory, sortBy]);
@@ -135,6 +157,13 @@ export default function CampaignsPage() {
   const calculateFundingPercentage = (current: number | null, goal: number) => {
     const currentAmount = current || 0;
     return Math.min(Math.round((currentAmount / goal) * 100), 100);
+  };
+
+  const capitalizeCategory = (category: string) => {
+    return category
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   const [locationFilter, setLocationFilter] = useState("");
@@ -385,7 +414,7 @@ export default function CampaignsPage() {
           />
           <div className="absolute top-3 left-3">
             <Badge variant="secondary" className="shadow-lg">
-              {campaign.category}
+              {capitalizeCategory(campaign.category)}
             </Badge>
           </div>
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">

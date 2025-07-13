@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -165,6 +165,43 @@ export default function SignUpPage() {
         : [...prev.interests, interest],
     }));
   };
+
+  // Handle back button to prevent form data loss
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (currentStep > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (currentStep > 0) {
+        e.preventDefault();
+        // Store form data in sessionStorage before navigation
+        sessionStorage.setItem('signupFormData', JSON.stringify(formData));
+        sessionStorage.setItem('signupCurrentStep', currentStep.toString());
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    // Restore form data if available
+    const savedFormData = sessionStorage.getItem('signupFormData');
+    const savedStep = sessionStorage.getItem('signupCurrentStep');
+    if (savedFormData && savedStep) {
+      setFormData(JSON.parse(savedFormData));
+      setCurrentStep(parseInt(savedStep));
+      sessionStorage.removeItem('signupFormData');
+      sessionStorage.removeItem('signupCurrentStep');
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [currentStep, formData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

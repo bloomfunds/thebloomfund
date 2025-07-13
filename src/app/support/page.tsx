@@ -349,7 +349,7 @@ export default function SupportPage() {
                   <div>
                     <p className="font-medium">Support Hours</p>
                     <p className="text-sm text-muted-foreground">
-                      Mon-Fri: 9AM-6PM EST
+                      Monday to Friday
                     </p>
                   </div>
                 </div>

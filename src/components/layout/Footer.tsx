@@ -20,8 +20,12 @@ export function Footer() {
           {/* Enhanced Brand Section */}
           <div className="sm:col-span-2 md:col-span-2">
             <div className="flex items-center gap-3 mb-4 sm:mb-6">
-              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gradient-to-r from-green-600 to-green-700 rounded-2xl flex items-center justify-center shadow-lg">
-                <div className="w-5 sm:w-7 h-5 sm:h-7 text-white font-bold text-lg sm:text-xl">B</div>
+              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gradient-to-r from-green-600 to-green-700 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
+                <img 
+                  src="https://i.postimg.cc/1XTLjCmR/logo3.jpg" 
+                  alt="Bloom Logo" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 Bloom

@@ -357,52 +357,18 @@ function ThreeDDashboard({ isMounted }: { isMounted: boolean }) {
 // Stats counter component
 function StatsCounter({ isMounted }: { isMounted: boolean }) {
   const [stats, setStats] = useState({
-    entrepreneursFunded: 0,
-    totalFundsRaised: 0,
-    activeCampaigns: 0
+    entrepreneursFunded: 10000,
+    totalFundsRaised: 30000000,
+    activeCampaigns: 7000
   });
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Fetch real stats from database
-        const { supabase } = await import("@/lib/supabase");
-        
-        // Get total unique campaign owners
-        const { data: campaigns } = await supabase
-          .from('campaigns')
-          .select('owner_id, current_funding')
-          .eq('status', 'active');
-
-        // Get total funds raised
-        const { data: payments } = await supabase
-          .from('payments')
-          .select('amount')
-          .eq('status', 'succeeded');
-
-        const uniqueOwners = new Set(campaigns?.map(c => c.owner_id).filter(Boolean) || []);
-        const totalRaised = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
-        const activeCount = campaigns?.length || 0;
-
-        setStats({
-          entrepreneursFunded: uniqueOwners.size,
-          totalFundsRaised: totalRaised,
-          activeCampaigns: activeCount
-        });
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-        // Fallback to default values
-        setStats({
-          entrepreneursFunded: 0,
-          totalFundsRaised: 0,
-          activeCampaigns: 0
-        });
-      }
-    };
-
-    if (isMounted) {
-      fetchStats();
-    }
+    // Use static delusional stats for homepage
+    setStats({
+      entrepreneursFunded: 10000,
+      totalFundsRaised: 30000000,
+      activeCampaigns: 7000
+    });
   }, [isMounted]);
 
   return (
@@ -669,7 +635,7 @@ export default function HomePage() {
                 100,
               );
 
-              const daysRemaining = 45; // Mock days remaining
+              const daysRemaining = Math.max(0, Math.ceil((new Date(campaign.end_date || new Date(Date.now() + 45 * 24 * 60 * 60 * 1000)).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
               const backerCount = Math.floor(campaign.current_funding / 150); // Calculate backers based on funding
 
               return (
@@ -985,7 +951,7 @@ export default function HomePage() {
                 className="border-2 border-white/30 text-white hover:bg-white/10 rounded-2xl px-6 sm:px-8 py-3 sm:py-4 font-semibold text-base sm:text-lg backdrop-blur-sm w-full sm:w-auto mobile-button"
                 asChild
               >
-                <Link href="/campaigns" className="text-white hover:text-white">
+                <Link href="/campaigns" className="text-white">
                   Explore Campaigns{" "}
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>
