@@ -99,7 +99,7 @@ async function handlePaymentSucceeded(paymentIntent: any) {
       message: message || undefined,
     });
 
-    // Update campaign funding - we'll implement this function later
+    // Campaign funding is automatically updated by the createPayment function
     console.log('Campaign funding updated for:', campaignId, 'Amount:', amount / 100);
 
     console.log('Payment processed successfully:', payment.id);

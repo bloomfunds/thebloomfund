@@ -47,7 +47,12 @@ const DonationForm = ({
         throw new Error("Please fill in all required fields");
       }
 
-      const amountInCents = Math.round(parseFloat(amount) * 100);
+      const amountValue = parseFloat(amount);
+      if (isNaN(amountValue) || amountValue <= 0) {
+        throw new Error("Please enter a valid donation amount");
+      }
+      
+      const amountInCents = Math.round(amountValue * 100);
       if (amountInCents < 100) {
         throw new Error("Minimum donation amount is $1.00");
       }
@@ -76,9 +81,15 @@ const DonationForm = ({
         throw new Error(data.error || "Failed to create payment");
       }
 
-      // Redirect to Stripe Checkout or handle payment
-      // For now, we'll show success message
-      setSuccess(true);
+      // Redirect to Stripe Checkout
+      if (data.clientSecret) {
+        // For now, show success message since Stripe Checkout integration needs to be completed
+        setSuccess(true);
+        // TODO: Implement Stripe Checkout redirect
+        // window.location.href = `/checkout?client_secret=${data.clientSecret}`;
+      } else {
+        throw new Error("No payment client secret received");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -89,7 +100,8 @@ const DonationForm = ({
   const handleRewardTierSelect = (tierId: string) => {
     const tier = rewardTiers.find(t => t.id === tierId);
     if (tier) {
-      setAmount((tier.amount / 100).toString());
+      // Amount is stored in cents, convert to dollars for display
+      setAmount((tier.amount / 100).toFixed(2));
       setSelectedRewardTier(tierId);
     }
   };
