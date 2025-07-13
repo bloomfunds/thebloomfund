@@ -26,6 +26,12 @@ export type Campaign = {
   shares_count?: number;
   featured?: boolean;
   verified?: boolean;
+  // Payout fields
+  payout_status?: "not_eligible" | "eligible" | "requested" | "processing" | "paid" | "failed" | "expired";
+  payout_requested_at?: string | null;
+  payout_processed_at?: string | null;
+  stripe_transfer_id?: string | null;
+  payout_amount?: number;
 };
 
 export type RewardTier = {
@@ -44,7 +50,7 @@ export type RewardTier = {
 export type Payment = {
   id: string;
   campaign_id: string;
-  user_id: string;
+  user_id?: string | null;
   amount: number;
   currency: string;
   status: "pending" | "succeeded" | "failed" | "refunded";
@@ -100,15 +106,30 @@ export type SupportTicket = {
 export type User = {
   id: string;
   email: string;
-  full_name?: string;
-  avatar_url?: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  // Stripe Connect fields
+  stripe_connect_account_id?: string | null;
+  stripe_connect_status?: "not_setup" | "pending" | "active" | "restricted" | "disabled";
+  stripe_connect_onboarded_at?: string | null;
+};
+
+export type CampaignPayout = {
+  id: string;
+  campaign_id: string;
+  user_id: string | null;
+  amount: number;
+  currency: string;
+  status: "pending" | "processing" | "paid" | "failed" | "expired";
+  stripe_transfer_id?: string | null;
+  stripe_connect_account_id?: string | null;
+  requested_at: string;
+  processed_at?: string | null;
+  expires_at: string;
   created_at: string;
   updated_at: string;
-  verified: boolean;
-  bio?: string;
-  location?: string;
-  website?: string;
-  social_links?: Record<string, string>;
 };
 
 // Cache management for production performance
@@ -181,17 +202,7 @@ function patchPaymentFields(data: any): Payment {
   };
 }
 
-// Patch helper for User
-function patchUserFields(data: any): User {
-  return {
-    ...data,
-    verified: data?.verified ?? false,
-    created_at: data?.created_at ?? '',
-    updated_at: data?.updated_at ?? '',
-    email: data?.email ?? '',
-    id: data?.id ?? '',
-  };
-}
+
 
 // Patch helper for CampaignMedia
 function patchCampaignMediaFields(data: any): CampaignMedia {
@@ -543,23 +554,7 @@ export async function getUserPledges(userId: string): Promise<Payment[]> {
 }
 
 export async function getUserById(userId: string): Promise<User | null> {
-  try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null; // User not found
-      }
-      throw error;
-    }
-    return data ? patchUserFields(data) : null;
-  } catch (error) {
-    console.error("Error in getUserById:", error);
-    throw error;
-  }
+  return getUserProfile(userId);
 }
 
 export async function updateUser(userId: string, updates: Partial<User>): Promise<User> {
@@ -943,6 +938,172 @@ export async function updateSupportTicket(id: string, updates: Partial<SupportTi
     console.error("Error in updateSupportTicket:", error);
     throw error;
   }
+}
+
+// Payout-related functions
+export async function createCampaignPayout(params: {
+  campaignId: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  stripeConnectAccountId: string;
+}): Promise<CampaignPayout> {
+  try {
+    const { campaignId, userId, amount, currency, stripeConnectAccountId } = params;
+    
+    // Calculate expiration date (30 days from now)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+    
+    const { data, error } = await supabase
+      .from("campaign_payouts")
+      .insert({
+        campaign_id: campaignId,
+        user_id: userId,
+        amount,
+        currency,
+        stripe_connect_account_id: stripeConnectAccountId,
+        expires_at: expiresAt.toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Database error creating payout:", error);
+      throw new Error(`Failed to create payout: ${error.message}`);
+    }
+
+    return patchPayoutFields(data);
+  } catch (error) {
+    console.error("Error in createCampaignPayout:", error);
+    throw error;
+  }
+}
+
+export async function getCampaignPayout(campaignId: string): Promise<CampaignPayout | null> {
+  try {
+    const { data, error } = await supabase
+      .from("campaign_payouts")
+      .select("*")
+      .eq("campaign_id", campaignId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return null; // No payout found
+      }
+      console.error("Database error getting payout:", error);
+      throw new Error(`Failed to get payout: ${error.message}`);
+    }
+
+    return patchPayoutFields(data);
+  } catch (error) {
+    console.error("Error in getCampaignPayout:", error);
+    throw error;
+  }
+}
+
+export async function updatePayoutStatus(payoutId: string, status: CampaignPayout["status"], stripeTransferId?: string): Promise<void> {
+  try {
+    const updateData: any = { status };
+    if (stripeTransferId) {
+      updateData.stripe_transfer_id = stripeTransferId;
+    }
+    if (status === "paid") {
+      updateData.processed_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from("campaign_payouts")
+      .update(updateData)
+      .eq("id", payoutId);
+
+    if (error) {
+      console.error("Database error updating payout:", error);
+      throw new Error(`Failed to update payout: ${error.message}`);
+    }
+  } catch (error) {
+    console.error("Error in updatePayoutStatus:", error);
+    throw error;
+  }
+}
+
+export async function getUserProfile(userId: string): Promise<User | null> {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return null;
+      }
+      console.error("Database error getting user profile:", error);
+      throw new Error(`Failed to get user profile: ${error.message}`);
+    }
+
+    return patchUserFields(data);
+  } catch (error) {
+    console.error("Error in getUserProfile:", error);
+    throw error;
+  }
+}
+
+export async function updateUserStripeConnect(userId: string, stripeConnectAccountId: string, status: User["stripe_connect_status"]): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from("users")
+      .update({
+        stripe_connect_account_id: stripeConnectAccountId,
+        stripe_connect_status: status,
+        stripe_connect_onboarded_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    if (error) {
+      console.error("Database error updating user Stripe Connect:", error);
+      throw new Error(`Failed to update user Stripe Connect: ${error.message}`);
+    }
+  } catch (error) {
+    console.error("Error in updateUserStripeConnect:", error);
+    throw error;
+  }
+}
+
+// Helper function to patch payout fields
+function patchPayoutFields(data: any): CampaignPayout {
+  return {
+    id: data.id,
+    campaign_id: data.campaign_id,
+    user_id: data.user_id,
+    amount: data.amount,
+    currency: data.currency,
+    status: data.status,
+    stripe_transfer_id: data.stripe_transfer_id,
+    stripe_connect_account_id: data.stripe_connect_account_id,
+    requested_at: data.requested_at,
+    processed_at: data.processed_at,
+    expires_at: data.expires_at,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
+}
+
+// Helper function to patch user fields
+function patchUserFields(data: any): User {
+  return {
+    id: data.id,
+    email: data.email,
+    full_name: data.full_name,
+    avatar_url: data.avatar_url,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    stripe_connect_account_id: data.stripe_connect_account_id,
+    stripe_connect_status: data.stripe_connect_status,
+    stripe_connect_onboarded_at: data.stripe_connect_onboarded_at,
+  };
 }
 
 // Export cache management for admin use

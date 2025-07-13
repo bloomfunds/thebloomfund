@@ -21,6 +21,10 @@ import {
 import { supabase } from "@/lib/supabase";
 import { Campaign } from "@/lib/database";
 import { getCampaignsByOwner } from "@/lib/database";
+import CampaignManagement from "@/components/dashboard/CampaignManagement";
+import PledgeTracking from "@/components/dashboard/PledgeTracking";
+import NotificationSystem from "@/components/dashboard/NotificationSystem";
+import PayoutManagement from "@/components/dashboard/PayoutManagement";
 
 export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -240,6 +244,9 @@ export default function DashboardPage() {
             <TabsTrigger value="active">Active Campaigns</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
             <TabsTrigger value="drafts">Drafts</TabsTrigger>
+            <TabsTrigger value="payouts">Payouts</TabsTrigger>
+            <TabsTrigger value="pledges">Pledges</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
 
           <TabsContent value="active" className="space-y-6">
@@ -379,6 +386,18 @@ export default function DashboardPage() {
                   ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="payouts" className="space-y-6">
+            <PayoutManagement userId={currentUser?.id} />
+          </TabsContent>
+
+          <TabsContent value="pledges" className="space-y-6">
+            <PledgeTracking userId={currentUser?.id} />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-6">
+            <NotificationSystem userId={currentUser?.id} />
           </TabsContent>
         </Tabs>
       </div>

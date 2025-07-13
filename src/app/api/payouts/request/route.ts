@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, isCampaignEligibleForPayout, createPayout } from '@/lib/stripe';
 import { getCurrentUser } from '@/lib/supabase';
-import { getCampaignById, updateCampaign } from '@/lib/database';
+import { getCampaignById, updateCampaign, getUserProfile } from '@/lib/database';
+import type { User } from '@/lib/database';
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,7 +43,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if campaign is eligible for payout
-    const eligibility = isCampaignEligibleForPayout(campaign);
+    const eligibility = isCampaignEligibleForPayout({
+      status: campaign.status,
+      current_funding: campaign.current_funding,
+      funding_goal: campaign.funding_goal,
+      end_date: campaign.end_date,
+      created_at: campaign.created_at || new Date().toISOString(),
+    });
     if (!eligibility.eligible) {
       return NextResponse.json(
         { error: eligibility.reason },
@@ -50,11 +57,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user has a Stripe Connect account
-    // This would typically be stored in the user's profile
-    // For now, we'll assume they need to set one up
-    const userProfile = await getUserProfile(user.id);
-    if (!userProfile?.stripe_connect_account_id) {
+    // Get user profile with Stripe Connect account
+    const userProfile: User | null = await getUserProfile(user.id);
+    if (!userProfile || !userProfile.stripe_connect_account_id) {
       return NextResponse.json(
         { 
           error: 'Stripe Connect account required',
@@ -66,7 +71,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Calculate payout amount (after platform fees)
-    const payoutAmount = Math.round(campaign.current_funding * 100); // Convert to cents
+    const payoutAmount = Math.round((campaign.current_funding || 0) * 100); // Convert to cents
 
     // Create payout
     const transfer = await createPayout({
@@ -97,11 +102,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Helper function to get user profile with Stripe Connect account
-async function getUserProfile(userId: string) {
-  // This would typically fetch from your users table
-  // For now, return null to indicate no Connect account
-  return null;
 } 

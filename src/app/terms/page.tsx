@@ -342,6 +342,27 @@ export default function TermsPage() {
                     </div>
                   </div>
                 </section>
+
+                <section className="mb-8">
+                  <h2 className="text-2xl font-bold mb-4">Payouts and Payment Processing</h2>
+                  <div className="space-y-4 text-muted-foreground">
+                    <p>
+                      <strong>Payout Eligibility:</strong> Campaign creators are eligible to request payouts 7 days after their campaign ends, provided the campaign has reached its funding goal.
+                    </p>
+                    <p>
+                      <strong>Payout Window:</strong> Campaign creators have 30 days from the campaign end date to request their payout. After 30 days, unclaimed funds become the property of Bloom Fund.
+                    </p>
+                    <p>
+                      <strong>Stripe Connect Requirement:</strong> To receive payouts, campaign creators must set up a Stripe Connect account through our platform. This is required for compliance and secure payment processing.
+                    </p>
+                    <p>
+                      <strong>Payout Processing:</strong> Payouts are processed manually by Bloom Fund and typically take 2-3 business days to reach your bank account after approval.
+                    </p>
+                    <p>
+                      <strong>Platform Fees:</strong> We charge a 5% platform fee plus $0.30 per donation on successfully funded campaigns. Payment processing fees are handled separately by Stripe.
+                    </p>
+                  </div>
+                </section>
               </div>
             </ScrollArea>
 

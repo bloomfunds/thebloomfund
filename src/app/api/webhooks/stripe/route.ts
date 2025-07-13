@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    switch (event.type) {
+    switch (event.type as string) {
       case 'payment_intent.succeeded':
         await handlePaymentSucceeded(event.data.object);
         break;
@@ -87,11 +87,11 @@ async function handlePaymentSucceeded(paymentIntent: any) {
     // Create payment record in database
     const payment = await createPayment({
       campaign_id: campaignId,
-      user_id: null, // Will be updated if user is logged in
+      user_id: undefined, // Will be updated if user is logged in
       amount: amount / 100, // Convert from cents to dollars
       currency: currency.toUpperCase(),
       status: 'succeeded',
-      donor_name: donorName,
+      donor_name: donorName ?? '',
       is_anonymous: isAnonymous === 'true',
       payment_method: 'stripe',
       transaction_id: paymentIntentId,
@@ -121,7 +121,7 @@ async function handlePaymentFailed(paymentIntent: any) {
     // Create failed payment record
     await createPayment({
       campaign_id: campaignId,
-      user_id: null,
+      user_id: undefined,
       amount: 0,
       currency: 'USD',
       status: 'failed',

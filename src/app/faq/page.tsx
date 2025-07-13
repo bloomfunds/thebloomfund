@@ -180,6 +180,41 @@ const faqData = [
       },
     ],
   },
+  {
+    category: "Payouts & Stripe Connect",
+    questions: [
+      {
+        question: "How do I receive payouts from my campaign?",
+        answer:
+          "To receive payouts, you must set up a Stripe Connect account through our platform. This is required for compliance and secure payment processing. You can set this up in your dashboard under 'Payouts'.",
+      },
+      {
+        question: "When can I request a payout?",
+        answer:
+          "You can request a payout 7 days after your campaign ends, provided your campaign has reached its funding goal. This waiting period allows for chargeback protection and fraud review.",
+      },
+      {
+        question: "How long do I have to claim my payout?",
+        answer:
+          "You have 30 days from your campaign end date to request your payout. After 30 days, unclaimed funds become the property of Bloom Fund. Make sure to set up your Stripe Connect account and request your payout within this window.",
+      },
+      {
+        question: "What is Stripe Connect and why do I need it?",
+        answer:
+          "Stripe Connect is Stripe's platform for handling payments between multiple parties. It's required for compliance, security, and to ensure funds are transferred directly to your bank account. Setting it up is free and takes just a few minutes.",
+      },
+      {
+        question: "How long does it take to receive my payout?",
+        answer:
+          "Once your payout is approved, funds are typically transferred to your bank account within 2-3 business days. The initial approval process may take 1-2 business days.",
+      },
+      {
+        question: "What happens if I don't set up Stripe Connect?",
+        answer:
+          "You won't be able to receive payouts from your campaigns. It's essential to set up your Stripe Connect account before your campaign ends to ensure you can claim your funds within the 30-day window.",
+      },
+    ],
+  },
 ];
 
 export default function FAQPage() {

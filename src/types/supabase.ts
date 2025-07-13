@@ -116,6 +116,11 @@ export type Database = {
           title: string
           updated_at: string | null
           website: string | null
+          payout_status: string | null
+          payout_requested_at: string | null
+          payout_processed_at: string | null
+          stripe_transfer_id: string | null
+          payout_amount: number | null
         }
         Insert: {
           business_name: string
@@ -136,6 +141,11 @@ export type Database = {
           title: string
           updated_at?: string | null
           website?: string | null
+          payout_status?: string | null
+          payout_requested_at?: string | null
+          payout_processed_at?: string | null
+          stripe_transfer_id?: string | null
+          payout_amount?: number | null
         }
         Update: {
           business_name?: string
@@ -156,6 +166,11 @@ export type Database = {
           title?: string
           updated_at?: string | null
           website?: string | null
+          payout_status?: string | null
+          payout_requested_at?: string | null
+          payout_processed_at?: string | null
+          stripe_transfer_id?: string | null
+          payout_amount?: number | null
         }
         Relationships: []
       }
@@ -258,6 +273,9 @@ export type Database = {
           full_name: string | null
           id: string
           updated_at: string | null
+          stripe_connect_account_id: string | null
+          stripe_connect_status: string | null
+          stripe_connect_onboarded_at: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -266,6 +284,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_status?: string | null
+          stripe_connect_onboarded_at?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -274,6 +295,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_status?: string | null
+          stripe_connect_onboarded_at?: string | null
         }
         Relationships: []
       },
@@ -381,7 +405,63 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
-      }
+      };
+      campaign_payouts: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          user_id: string | null;
+          amount: number;
+          currency: string;
+          status: string;
+          stripe_transfer_id: string | null;
+          stripe_connect_account_id: string | null;
+          requested_at: string;
+          processed_at: string | null;
+          expires_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          user_id?: string | null;
+          amount: number;
+          currency?: string;
+          status?: string;
+          stripe_transfer_id?: string | null;
+          stripe_connect_account_id?: string | null;
+          requested_at?: string;
+          processed_at?: string | null;
+          expires_at: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          campaign_id?: string;
+          user_id?: string | null;
+          amount?: number;
+          currency?: string;
+          status?: string;
+          stripe_transfer_id?: string | null;
+          stripe_connect_account_id?: string | null;
+          requested_at?: string;
+          processed_at?: string | null;
+          expires_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "campaign_payouts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ];
+      };
     }
     Views: {
       [_ in never]: never

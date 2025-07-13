@@ -165,7 +165,7 @@ export async function refundPayment(paymentIntentId: string, amount?: number): P
 // Check if a campaign is eligible for payout
 export function isCampaignEligibleForPayout(campaign: {
   status: string;
-  current_funding: number;
+  current_funding: number | null;
   funding_goal: number;
   end_date: string;
   created_at: string;
@@ -190,7 +190,7 @@ export function isCampaignEligibleForPayout(campaign: {
   }
 
   // Check if campaign reached goal
-  if (PAYOUT_POLICY.MINIMUM_GOAL_REQUIRED && campaign.current_funding < campaign.funding_goal) {
+  if (PAYOUT_POLICY.MINIMUM_GOAL_REQUIRED && (campaign.current_funding || 0) < campaign.funding_goal) {
     return { eligible: false, reason: 'Campaign did not reach funding goal' };
   }
 

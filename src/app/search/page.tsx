@@ -97,12 +97,17 @@ export default function SearchPage() {
       const convertedData = data.map(campaign => ({
         ...campaign,
         cover_image: campaign.cover_image || null,
-        current_funding: campaign.current_funding || 0,
+        current_funding: campaign.current_funding ?? null,
         owner_id: campaign.owner_id || '',
         created_at: campaign.created_at || null,
         updated_at: campaign.updated_at || null,
         website: campaign.website || null,
         owner_avatar: campaign.owner_avatar || null,
+        payout_status: campaign.payout_status ?? null,
+        payout_amount: campaign.payout_amount ?? null,
+        payout_requested_at: campaign.payout_requested_at ?? null,
+        payout_processed_at: campaign.payout_processed_at ?? null,
+        stripe_transfer_id: campaign.stripe_transfer_id ?? null,
       }));
       setCampaigns(convertedData);
     } catch (error) {
