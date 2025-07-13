@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, isCampaignEligibleForPayout, createPayout } from '@/lib/stripe';
+import { stripe, isCampaignEligibleForPayout, createPayout, calculatePayoutAmount } from '@/lib/stripe';
 import { getCurrentUser } from '@/lib/supabase';
-import { getCampaignById, updateCampaign, getUserProfile } from '@/lib/database';
+import { getCampaignById, updateCampaign, getUserProfile, createCampaignPayout, updatePayoutStatus } from '@/lib/database';
 import type { User } from '@/lib/database';
 
 export async function POST(req: NextRequest) {
@@ -71,28 +71,44 @@ export async function POST(req: NextRequest) {
     }
 
     // Calculate payout amount (after platform fees)
-    const payoutAmount = Math.round((campaign.current_funding || 0) * 100); // Convert to cents
+    const totalAmount = campaign.current_funding || 0;
+    const payoutAmount = calculatePayoutAmount(totalAmount);
+    const payoutAmountCents = Math.round(payoutAmount * 100); // Convert to cents
 
-    // Create payout
+    // Create payout record in database
+    const payout = await createCampaignPayout({
+      campaignId: campaign.id,
+      userId: user.id,
+      amount: payoutAmountCents,
+      currency: 'usd',
+      stripeConnectAccountId: userProfile.stripe_connect_account_id,
+    });
+
+    // Create Stripe transfer
     const transfer = await createPayout({
-      amount: payoutAmount,
+      amount: payoutAmountCents,
       currency: 'usd',
       connectAccountId: userProfile.stripe_connect_account_id,
       campaignId: campaign.id,
       description: `Payout for campaign: ${campaign.title}`,
     });
 
+    // Update payout status with transfer ID
+    await updatePayoutStatus(payout.id, 'processing', transfer.id);
+
     // Update campaign payout status
     await updateCampaign(campaign.id, {
       payout_status: 'processing',
       payout_requested_at: new Date().toISOString(),
       stripe_transfer_id: transfer.id,
+      payout_amount: payoutAmountCents,
     });
 
     return NextResponse.json({
       success: true,
       transferId: transfer.id,
-      amount: payoutAmount / 100,
+      payoutId: payout.id,
+      amount: payoutAmount,
       message: 'Payout request submitted successfully',
     });
   } catch (error) {

@@ -174,8 +174,8 @@ export function isCampaignEligibleForPayout(campaign: {
   const endDate = new Date(campaign.end_date);
   const daysSinceEnd = Math.floor((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  // Check if campaign has ended
-  if (campaign.status !== 'completed') {
+  // Check if campaign has ended (either completed or past end date)
+  if (campaign.status !== 'completed' && now < endDate) {
     return { eligible: false, reason: 'Campaign has not ended' };
   }
 
@@ -195,6 +195,11 @@ export function isCampaignEligibleForPayout(campaign: {
   }
 
   return { eligible: true };
+}
+
+// Calculate payout amount after platform fees
+export function calculatePayoutAmount(totalAmount: number): number {
+  return calculateAmountAfterFee(totalAmount);
 }
 
 // Calculate days remaining for payout

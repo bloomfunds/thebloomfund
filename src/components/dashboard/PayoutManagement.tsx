@@ -278,7 +278,8 @@ export default function PayoutManagement({
                 });
 
                 const daysRemaining = getPayoutDaysRemaining(campaign.end_date);
-                const payoutAmount = campaign.payout_amount || campaign.current_funding || 0;
+                const totalAmount = campaign.current_funding || 0;
+                const payoutAmount = campaign.payout_amount ? campaign.payout_amount / 100 : totalAmount * 0.95 - 0.30; // After platform fees
 
                 return (
                   <Card

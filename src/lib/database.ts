@@ -27,11 +27,11 @@ export type Campaign = {
   featured?: boolean;
   verified?: boolean;
   // Payout fields
-  payout_status?: "not_eligible" | "eligible" | "requested" | "processing" | "paid" | "failed" | "expired";
+  payout_status?: "not_eligible" | "eligible" | "requested" | "processing" | "paid" | "failed" | "expired" | null;
   payout_requested_at?: string | null;
   payout_processed_at?: string | null;
   stripe_transfer_id?: string | null;
-  payout_amount?: number;
+  payout_amount?: number | null;
 };
 
 export type RewardTier = {
