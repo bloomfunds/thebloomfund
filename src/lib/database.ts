@@ -227,6 +227,23 @@ function patchCampaignMilestoneFields(data: any): CampaignMilestone {
 
 // Production database operations
 export async function createCampaign(campaignData: Omit<Campaign, 'id' | 'created_at' | 'updated_at' | 'current_funding' | 'backers_count' | 'views_count' | 'shares_count' | 'featured' | 'verified'>): Promise<Campaign> {
+  // Check if Supabase is properly configured
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured - returning mock campaign');
+    return {
+      id: 'mock-campaign-id',
+      ...campaignData,
+      current_funding: 0,
+      backers_count: 0,
+      views_count: 0,
+      shares_count: 0,
+      featured: false,
+      verified: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as Campaign;
+  }
+
   try {
     const { data, error } = await supabase
       .from("campaigns")
@@ -320,6 +337,15 @@ export async function getAllCampaigns(limit: number = 20, offset: number = 0, fi
   minGoal?: number;
   maxGoal?: number;
 }): Promise<{ campaigns: Campaign[]; total: number }> {
+  // Check if Supabase is properly configured
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured - returning mock campaigns');
+    return { 
+      campaigns: [], 
+      total: 0 
+    };
+  }
+
   try {
     let query = supabase
       .from("campaigns")
@@ -697,8 +723,8 @@ export async function getCampaignAnalytics(campaignId: string): Promise<{
     const now = new Date();
     const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
-    return {
-      totalRaised,
+  return {
+    totalRaised,
       backersCount: payments.length,
       averagePledge,
       fundingProgress,
@@ -718,6 +744,12 @@ export async function getCampaigns(filters?: {
   category?: string;
   featured?: boolean;
 }): Promise<Campaign[]> {
+  // Check if Supabase is properly configured
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured - returning mock campaigns');
+    return [];
+  }
+
   const cacheKey = `campaigns_${JSON.stringify(filters)}`;
   const cached = getCachedData(cacheKey);
   if (cached) return cached;

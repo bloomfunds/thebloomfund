@@ -817,7 +817,7 @@ export default function CampaignForm() {
                           handleInputChange("fundingGoal", 0);
                         } else {
                           handleInputChange("fundingGoal", Number(value));
-                        }
+                      }
                       }}
                       className="h-12 text-base"
                     />

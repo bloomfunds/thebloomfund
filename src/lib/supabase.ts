@@ -5,19 +5,40 @@ import { Database } from "../types/supabase";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
+// Create a mock client for development when environment variables are not set
+let supabase: any;
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn("Supabase environment variables not configured. Using mock client for development.");
-}
-
-// Production Supabase client with enhanced configuration
-export const supabase = createClient<Database>(
-  supabaseUrl || 'https://dummy.supabase.co', 
-  supabaseAnonKey || 'dummy-key', 
-  {
+  // Create a mock client that doesn't require real credentials
+  supabase = {
+    auth: {
+      signUp: async () => ({ data: { user: { id: 'mock-user-id' } }, error: null }),
+      signInWithPassword: async () => ({ data: { user: { id: 'mock-user-id' } }, error: null }),
+      signOut: async () => ({ error: null }),
+      getUser: async () => ({ data: { user: null }, error: null }),
+      resetPasswordForEmail: async () => ({ error: null }),
+    },
+    from: () => ({
+      select: () => ({ eq: () => ({ order: () => ({ limit: () => ({ data: [], error: null }) }) }) }),
+      insert: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }),
+      update: () => ({ eq: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }) }),
+      delete: () => ({ eq: () => ({ data: null, error: null }) }),
+    }),
+    channel: () => ({
+      on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+    }),
+  };
+} else {
+  // Production Supabase client with enhanced configuration
+  supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
+      persistSession: isBrowser,
+      detectSessionInUrl: isBrowser,
       flowType: 'pkce',
     },
     realtime: {
@@ -30,8 +51,10 @@ export const supabase = createClient<Database>(
         'X-Client-Info': 'thebloomfund-web',
       },
     },
-  }
-);
+  });
+}
+
+export { supabase };
 
 // Enhanced error handling and retry logic
 class SupabaseService {
@@ -74,7 +97,12 @@ class SupabaseService {
     return this.withRetry(async () => {
       // Check if Supabase is properly configured
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        throw new Error('Supabase is not properly configured. Please set environment variables.');
+        console.warn('Supabase not configured - using mock signup');
+        // Return mock data for development
+        return {
+          user: { id: 'mock-user-id', email },
+          session: null,
+        };
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -97,6 +125,16 @@ class SupabaseService {
 
   async signIn(email: string, password: string) {
     return this.withRetry(async () => {
+      // Check if Supabase is properly configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        console.warn('Supabase not configured - using mock signin');
+        // Return mock data for development
+        return {
+          user: { id: 'mock-user-id', email },
+          session: { access_token: 'mock-token', refresh_token: 'mock-refresh' },
+        };
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -136,6 +174,12 @@ class SupabaseService {
 
   async getCurrentUser() {
     return this.withRetry(async () => {
+      // Check if Supabase is properly configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        console.warn('Supabase not configured - returning null user');
+        return null;
+      }
+
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error) {
@@ -590,6 +634,18 @@ export async function signUp(
   password: string,
   fullName?: string,
 ) {
+  // Check if Supabase is properly configured
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured - using mock signup');
+    return { 
+      data: { 
+        user: { id: 'mock-user-id', email }, 
+        session: null 
+      }, 
+      error: null 
+    };
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -597,6 +653,7 @@ export async function signUp(
       data: {
         full_name: fullName,
       },
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
     },
   });
 
@@ -621,6 +678,18 @@ export async function signUp(
 }
 
 export async function signIn(email: string, password: string) {
+  // Check if Supabase is properly configured
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured - using mock signin');
+    return { 
+      data: { 
+        user: { id: 'mock-user-id', email }, 
+        session: { access_token: 'mock-token', refresh_token: 'mock-refresh' } 
+      }, 
+      error: null 
+    };
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -635,6 +704,12 @@ export async function signOut() {
 }
 
 export async function getCurrentUser() {
+  // Check if Supabase is properly configured
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured - returning null user');
+    return { user: null, error: null };
+  }
+
   const {
     data: { user },
     error,
