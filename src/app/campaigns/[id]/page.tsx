@@ -347,7 +347,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-4">
                   <Button 
-                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-bold rounded-xl"
+                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-10 py-5 text-lg font-bold rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 border-0"
                     onClick={() => {
                       // Store pledge intent for general support
                       const pledgeIntent = {
@@ -360,16 +360,11 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                       };
                       localStorage.setItem('pledgeIntent', JSON.stringify(pledgeIntent));
                       
-                      // Scroll to rewards section or redirect to payment
-                      const rewardsSection = document.querySelector('[data-rewards-section]');
-                      if (rewardsSection) {
-                        rewardsSection.scrollIntoView({ behavior: 'smooth' });
-                      } else {
-                        window.location.href = `/payment?campaign=${campaign.id}&amount=0`;
-                      }
+                      // Redirect to payment page
+                      window.location.href = `/payment?campaign=${campaign.id}&amount=0`;
                     }}
                   >
-                    <Heart className="w-5 h-5 mr-2" />
+                    <Heart className="w-6 h-6 mr-3" />
                     Support This Project
                   </Button>
                   <Button
