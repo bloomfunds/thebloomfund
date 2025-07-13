@@ -442,7 +442,7 @@ export default function SignUpPage() {
                       <Input
                         id="location"
                         type="text"
-                        placeholder="City, State/Country"
+                        placeholder="City, State/Province, Country"
                         value={formData.location}
                         onChange={(e) =>
                           setFormData({ ...formData, location: e.target.value })
@@ -450,6 +450,9 @@ export default function SignUpPage() {
                         required
                         disabled={isLoading}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Please provide your city, state/province, and country for better campaign matching
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="company">Company (Optional)</Label>

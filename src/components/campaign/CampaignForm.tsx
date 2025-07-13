@@ -741,7 +741,7 @@ export default function CampaignForm() {
                     Tell Us Your Story *
                   </Label>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Share your business idea and why it matters
+                    Tell us your story
                   </p>
                   <Textarea
                     id="businessDescription"
@@ -813,11 +813,19 @@ export default function CampaignForm() {
                       value={formData.fundingGoal || ""}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === "" || value === "0") {
+                        // Remove leading zeros
+                        const cleanValue = value.replace(/^0+/, '') || '0';
+                        if (cleanValue === "0") {
                           handleInputChange("fundingGoal", 0);
                         } else {
-                          handleInputChange("fundingGoal", Number(value));
-                      }
+                          handleInputChange("fundingGoal", Number(cleanValue));
+                        }
+                      }}
+                      onFocus={(e) => {
+                        // Clear the field if it's just "0"
+                        if (e.target.value === "0") {
+                          e.target.value = "";
+                        }
                       }}
                       className="h-12 text-base"
                     />
@@ -840,10 +848,18 @@ export default function CampaignForm() {
                       value={formData.minContribution || ""}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === "" || value === "0") {
+                        // Remove leading zeros
+                        const cleanValue = value.replace(/^0+/, '') || '0';
+                        if (cleanValue === "0") {
                           handleInputChange("minContribution", 0);
                         } else {
-                          handleInputChange("minContribution", Number(value));
+                          handleInputChange("minContribution", Number(cleanValue));
+                        }
+                      }}
+                      onFocus={(e) => {
+                        // Clear the field if it's just "0"
+                        if (e.target.value === "0") {
+                          e.target.value = "";
                         }
                       }}
                       className="h-12 text-base"

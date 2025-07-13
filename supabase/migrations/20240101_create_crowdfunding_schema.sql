@@ -10,14 +10,14 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255),
-    avatar_url TEXT,
+  avatar_url TEXT,
     bio TEXT,
     location VARCHAR(255),
     website VARCHAR(255),
     social_links JSONB DEFAULT '{}',
     verified BOOLEAN DEFAULT FALSE,
     email_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_login TIMESTAMP WITH TIME ZONE,
     is_active BOOLEAN DEFAULT TRUE,
@@ -28,7 +28,7 @@ CREATE TABLE users (
 CREATE TABLE campaigns (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+  description TEXT NOT NULL,
     business_name VARCHAR(255) NOT NULL,
     owner_name VARCHAR(255) NOT NULL,
     owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -37,10 +37,10 @@ CREATE TABLE campaigns (
     category VARCHAR(100) NOT NULL,
     location VARCHAR(255) NOT NULL,
     website VARCHAR(255),
-    cover_image TEXT,
-    owner_avatar TEXT,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
+  cover_image TEXT,
+  owner_avatar TEXT,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'completed', 'cancelled', 'suspended')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -84,8 +84,8 @@ CREATE TABLE payments (
     transaction_id VARCHAR(255),
     reward_tier_id UUID REFERENCES reward_tiers(id) ON DELETE SET NULL,
     message TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     processed_at TIMESTAMP WITH TIME ZONE,
     refunded_at TIMESTAMP WITH TIME ZONE,
     metadata JSONB DEFAULT '{}'
@@ -96,9 +96,9 @@ CREATE TABLE campaign_media (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
     media_type VARCHAR(10) NOT NULL CHECK (media_type IN ('image', 'video')),
-    media_url TEXT NOT NULL,
-    caption TEXT,
-    display_order INTEGER DEFAULT 0,
+  media_url TEXT NOT NULL,
+  caption TEXT,
+  display_order INTEGER DEFAULT 0,
     file_size INTEGER,
     mime_type VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -113,7 +113,7 @@ CREATE TABLE campaign_milestones (
     target_amount DECIMAL(15,2) NOT NULL CHECK (target_amount > 0),
     is_reached BOOLEAN DEFAULT FALSE,
     reached_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Comments and updates on campaigns
@@ -154,7 +154,7 @@ CREATE TABLE notifications (
     message TEXT NOT NULL,
     data JSONB DEFAULT '{}',
     is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Analytics and tracking
@@ -189,8 +189,8 @@ CREATE TABLE support_tickets (
     priority VARCHAR(20) DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
     assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
     resolved_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Analytics events table for comprehensive tracking
@@ -203,7 +203,7 @@ CREATE TABLE analytics_events (
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     ip_address INET,
     user_agent TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Performance indexes for production scale
@@ -253,8 +253,8 @@ CREATE INDEX idx_users_fts ON users USING gin(to_tsvector('english', full_name |
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
+  NEW.updated_at = NOW();
+  RETURN NEW;
 END;
 $$ language 'plpgsql';
 

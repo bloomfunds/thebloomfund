@@ -347,7 +347,7 @@ export default function CampaignsPage() {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary">{campaign.category}</Badge>
+                    <Badge variant="secondary">{capitalizeCategory(campaign.category)}</Badge>
                     <div className="flex items-center text-sm text-muted-foreground">
                       <MapPin className="h-3 w-3 mr-1" />
                       {campaign.location}

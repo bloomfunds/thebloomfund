@@ -340,7 +340,7 @@ export async function getAllCampaigns(limit: number = 20, offset: number = 0, fi
   // Check if Supabase is properly configured
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     console.warn('Supabase not configured - returning mock campaigns');
-    return { 
+      return {
       campaigns: [], 
       total: 0 
     };
@@ -744,7 +744,7 @@ export async function getCampaigns(filters?: {
   category?: string;
   featured?: boolean;
 }): Promise<Campaign[]> {
-  // Check if Supabase is properly configured
+    // Check if Supabase is properly configured
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     console.warn('Supabase not configured - returning mock campaigns');
     return [];

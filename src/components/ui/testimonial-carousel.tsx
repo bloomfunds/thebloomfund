@@ -530,6 +530,23 @@ export default function TestimonialCarousel() {
     return () => clearInterval(interval);
   }, [isMounted, totalTestimonials]);
 
+  // Pause scrolling on hover
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (!isMounted || isPaused) return;
+
+    const interval = setInterval(() => {
+      setScrollPosition((prev) => {
+        const maxScroll = totalTestimonials * cardWidth;
+        const newPosition = prev + 1;
+        return newPosition >= maxScroll ? 0 : newPosition;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [isMounted, totalTestimonials, isPaused]);
+
   if (!isMounted) {
     return (
       <div className="max-w-7xl mx-auto">
@@ -548,7 +565,11 @@ export default function TestimonialCarousel() {
   return (
     <div className="max-w-7xl mx-auto relative">
       {/* Scrolling Container */}
-      <div className="relative overflow-hidden">
+      <div 
+        className="relative overflow-hidden"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
         {/* Gradient Overlays */}
         <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white to-transparent z-10" />
         <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white to-transparent z-10" />

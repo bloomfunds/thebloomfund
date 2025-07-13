@@ -164,70 +164,70 @@ export default function CampaignPage({ params }: CampaignPageProps) {
     );
   }
 
-  // Professional campaign updates
-  const campaignUpdates = [
-    {
-      id: 1,
-      title: "Campaign Successfully Completed - 400% Funded!",
-      content:
-        "We are overwhelmed by the incredible support from our community. With $1.2M raised against our $300K goal, we can now expand our vision and deliver even more value to our backers.",
-      date: "2024-01-20",
+    // Professional campaign updates
+    const campaignUpdates = [
+      {
+        id: 1,
+        title: "Campaign Successfully Completed - 400% Funded!",
+        content:
+          "We are overwhelmed by the incredible support from our community. With $1.2M raised against our $300K goal, we can now expand our vision and deliver even more value to our backers.",
+        date: "2024-01-20",
       author: campaign?.owner_name,
-    },
-    {
-      id: 2,
-      title: "Production Timeline & Next Steps",
-      content:
-        "With funding complete, we're moving into full production mode. Our team is working around the clock to ensure timely delivery while maintaining the highest quality standards.",
-      date: "2024-01-18",
+      },
+      {
+        id: 2,
+        title: "Production Timeline & Next Steps",
+        content:
+          "With funding complete, we're moving into full production mode. Our team is working around the clock to ensure timely delivery while maintaining the highest quality standards.",
+        date: "2024-01-18",
       author: campaign?.owner_name,
-    },
-    {
-      id: 3,
-      title: "Thank You to Our Amazing Community",
-      content:
-        "The response has been incredible. We're grateful for every single backer who believed in our vision and helped make this dream a reality.",
-      date: "2024-01-15",
+      },
+      {
+        id: 3,
+        title: "Thank You to Our Amazing Community",
+        content:
+          "The response has been incredible. We're grateful for every single backer who believed in our vision and helped make this dream a reality.",
+        date: "2024-01-15",
       author: campaign?.owner_name,
-    },
-  ];
+      },
+    ];
 
-  // Related campaigns
-  const relatedCampaigns = [
-    {
-      id: 2,
-      title: "Sustainable Tech Innovation Hub",
-      current_funding: 850000,
-      funding_goal: 500000,
-      cover_image:
-        "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&q=80",
-      category: "Technology",
-      backers: 892,
-      daysLeft: 12,
-    },
-    {
-      id: 3,
-      title: "Green Energy Solutions Platform",
-      current_funding: 420000,
-      funding_goal: 350000,
-      cover_image:
-        "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=400&q=80",
-      category: "Environment",
-      backers: 634,
-      daysLeft: 8,
-    },
-    {
-      id: 4,
-      title: "Community Development Initiative",
-      current_funding: 180000,
-      funding_goal: 200000,
-      cover_image:
-        "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&q=80",
-      category: "Community",
-      backers: 456,
-      daysLeft: 15,
-    },
-  ];
+    // Related campaigns
+    const relatedCampaigns = [
+      {
+        id: 2,
+        title: "Sustainable Tech Innovation Hub",
+        current_funding: 850000,
+        funding_goal: 500000,
+        cover_image:
+          "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&q=80",
+        category: "Technology",
+        backers: 892,
+        daysLeft: 12,
+      },
+      {
+        id: 3,
+        title: "Green Energy Solutions Platform",
+        current_funding: 420000,
+        funding_goal: 350000,
+        cover_image:
+          "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=400&q=80",
+        category: "Environment",
+        backers: 634,
+        daysLeft: 8,
+      },
+      {
+        id: 4,
+        title: "Community Development Initiative",
+        current_funding: 180000,
+        funding_goal: 200000,
+        cover_image:
+          "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&q=80",
+        category: "Community",
+        backers: 456,
+        daysLeft: 15,
+      },
+    ];
 
   // Default milestones if none exist
   const keyMilestones = milestones.length > 0 ? milestones.map((milestone: any) => ({
@@ -247,27 +247,27 @@ export default function CampaignPage({ params }: CampaignPageProps) {
         year: 'numeric', 
         month: 'short' 
       }) : "In Progress",
-      completed: true,
-    },
-    {
+        completed: true,
+      },
+      {
       title: "25% Funded",
       description: "First major milestone reached",
       date: "In Progress",
       completed: campaignStats.fundingPercentage >= 25,
-    },
-    {
+      },
+      {
       title: "50% Funded",
       description: "Halfway to the goal",
       date: "In Progress", 
       completed: campaignStats.fundingPercentage >= 50,
-    },
-    {
+      },
+      {
       title: "100% Funded",
       description: "Campaign goal achieved",
       date: "In Progress",
       completed: campaignStats.fundingPercentage >= 100,
-    },
-    {
+      },
+      {
       title: "Campaign Ends",
       description: "Funding period concludes",
       date: campaign ? new Date(campaign.end_date).toLocaleDateString('en-US', { 
@@ -275,8 +275,8 @@ export default function CampaignPage({ params }: CampaignPageProps) {
         month: 'short' 
       }) : "In Progress",
       completed: campaignStats.daysRemaining <= 0,
-    },
-  ];
+      },
+    ];
 
     return (
       <div className="min-h-screen bg-white">
