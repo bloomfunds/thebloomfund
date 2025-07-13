@@ -1405,30 +1405,9 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                         <h3 className="font-bold text-lg text-gray-900 mb-2">
                           No rewards available
                         </h3>
-                        <p className="text-gray-600 text-sm mb-4">
+                        <p className="text-gray-600 text-sm">
                           Support this project with any amount!
                         </p>
-                        <Button 
-                          className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 font-semibold rounded-lg"
-                          onClick={() => {
-                            // Store pledge intent for general support
-                            const pledgeIntent = {
-                              campaignId: campaign.id,
-                              campaignTitle: campaign.title,
-                              tierId: null,
-                              tierTitle: 'General Support',
-                              amount: 0, // Will be set by user
-                              timestamp: new Date().toISOString()
-                            };
-                            localStorage.setItem('pledgeIntent', JSON.stringify(pledgeIntent));
-                            
-                            // Redirect to payment page
-                            window.location.href = `/payment?campaign=${campaign.id}&amount=0`;
-                          }}
-                        >
-                          <Heart className="w-4 h-4 mr-2" />
-                          Support Now
-                        </Button>
                       </div>
                     )}
                   </CardContent>
