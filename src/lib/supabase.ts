@@ -453,7 +453,7 @@ class SupabaseService {
       }
 
       const payments = await this.getPaymentsByCampaign(campaignId);
-      const totalRaised = payments.reduce((sum, payment) => sum + payment.amount, 0);
+      const totalRaised = payments.reduce((sum: number, payment: any) => sum + payment.amount, 0);
       const averagePledge = payments.length > 0 ? totalRaised / payments.length : 0;
       const fundingProgress = (totalRaised / campaign.funding_goal) * 100;
 

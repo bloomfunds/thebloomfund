@@ -291,7 +291,7 @@ export class StorageService {
         throw new Error(error.message);
       }
 
-      const used = data?.reduce((total, file) => total + (file.metadata?.size || 0), 0) || 0;
+      const used = data?.reduce((total: number, file: any) => total + (file.metadata?.size || 0), 0) || 0;
       const total = 100 * 1024 * 1024 * 1024; // 100GB limit
       const percentage = (used / total) * 100;
 

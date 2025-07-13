@@ -664,7 +664,7 @@ export async function searchCampaigns(filters: {
 
     // Apply client-side filters that can't be done in SQL
     if (filters.fundingStatus && filters.fundingStatus !== "all") {
-      results = results.filter(campaign => {
+      results = results.filter((campaign: any) => {
         const percentage = ((campaign.current_funding || 0) / campaign.funding_goal) * 100;
         switch (filters.fundingStatus) {
           case "under_25": return percentage < 25;
@@ -679,7 +679,7 @@ export async function searchCampaigns(filters: {
 
     if (filters.timeRemaining && filters.timeRemaining !== "all") {
       const now = new Date();
-      results = results.filter(campaign => {
+      results = results.filter((campaign: any) => {
         const endDate = new Date(campaign.end_date);
         const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         switch (filters.timeRemaining) {
@@ -932,7 +932,7 @@ export async function getSupportTicketsByUser(userId: string): Promise<SupportTi
       throw new Error(`Failed to fetch support tickets: ${error.message}`);
     }
 
-    return (data || []).map(ticket => ({
+    return (data || []).map((ticket: any) => ({
       ...ticket,
       status: ticket.status as "open" | "in_progress" | "resolved" | "closed",
       priority: ticket.priority as "low" | "medium" | "high" | "urgent",
