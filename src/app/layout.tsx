@@ -56,7 +56,10 @@ export default function RootLayout({
               <Footer />
             </ErrorBoundary>
           </div>
-          <EnhancedCursor />
+          {/* Only show enhanced cursor on desktop */}
+          <div className="hidden md:block">
+            <EnhancedCursor />
+          </div>
           <TempoInit />
         </ErrorBoundary>
       </body>

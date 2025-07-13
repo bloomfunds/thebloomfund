@@ -72,7 +72,7 @@ function TypewriterText({ isMounted }: { isMounted: boolean }) {
             }
           }
         },
-        isDeleting ? 50 : 120,
+        isDeleting ? 80 : 150,
       );
 
       return () => {
@@ -101,7 +101,7 @@ function TypewriterText({ isMounted }: { isMounted: boolean }) {
   );
 }
 
-// Enhanced floating particles component
+// Optimized floating particles component - reduced for better performance
 function FloatingParticles({ isMounted }: { isMounted: boolean }) {
   const [particles, setParticles] = useState<
     Array<{
@@ -112,7 +112,6 @@ function FloatingParticles({ isMounted }: { isMounted: boolean }) {
       color: string;
       duration: number;
       opacity: number;
-      blur: number;
     }>
   >([]);
 
@@ -122,30 +121,18 @@ function FloatingParticles({ isMounted }: { isMounted: boolean }) {
     }
 
     try {
-      const colors = [
-        "#0acc72",
-        "#08b866",
-        "#06a35a",
-        "#048f4e",
-        "#027a42",
-        "#10b981",
-        "#059669",
-        "#047857",
-        "#065f46",
-        "#064e3b",
-      ];
-      // Enhanced particles with more variety
-      const newParticles = Array.from({ length: 60 }, (_, i) => {
+      const colors = ["#0acc72", "#08b866", "#10b981", "#059669"];
+      // Reduced particles for better performance
+      const newParticles = Array.from({ length: 20 }, (_, i) => {
         const seed = i * 123.456;
         return {
           id: i,
           left: ((seed * 9301 + 49297) % 233280) / 2332.8,
-          delay: ((seed * 1103 + 4297) % 30000) / 1000,
-          size: 2 + ((seed * 7919 + 2971) % 8000) / 1000,
+          delay: ((seed * 1103 + 4297) % 15000) / 1000,
+          size: 3 + ((seed * 7919 + 2971) % 4000) / 1000,
           color: colors[Math.floor((seed * 5471 + 1789) % colors.length)],
-          duration: 20 + ((seed * 3571 + 8291) % 15000) / 1000,
-          opacity: 0.3 + ((seed * 2341 + 5678) % 4000) / 10000,
-          blur: 0.5 + ((seed * 4567 + 1234) % 2000) / 1000,
+          duration: 15 + ((seed * 3571 + 8291) % 10000) / 1000,
+          opacity: 0.4 + ((seed * 2341 + 5678) % 3000) / 10000,
         };
       });
       setParticles(newParticles);
@@ -167,11 +154,9 @@ function FloatingParticles({ isMounted }: { isMounted: boolean }) {
             animationDelay: `${particle.delay}s`,
             width: `${particle.size}px`,
             height: `${particle.size}px`,
-            background: `radial-gradient(circle, ${particle.color}${Math.floor(particle.opacity * 255).toString(16)}, transparent 70%)`,
-            boxShadow: `0 0 ${particle.size * 3}px ${particle.color}${Math.floor(particle.opacity * 128).toString(16)}, inset 0 0 ${particle.size}px ${particle.color}${Math.floor(particle.opacity * 64).toString(16)}`,
-            filter: `blur(${particle.blur}px)`,
-            animation: `elegant-float-up ${particle.duration}s ease-in-out infinite`,
+            background: particle.color,
             opacity: particle.opacity,
+            animation: `elegant-float-up ${particle.duration}s ease-in-out infinite`,
           }}
         />
       ))}
@@ -179,25 +164,25 @@ function FloatingParticles({ isMounted }: { isMounted: boolean }) {
   );
 }
 
-// Animated background component
+// Optimized animated background component - reduced blur for better performance
 function AnimatedBackground({ isMounted }: { isMounted: boolean }) {
   return (
     <>
-      {/* Enhanced Premium Background with Green Blur Gradients */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white via-green-50/30 to-white" />
+      {/* Simple gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white via-green-50/20 to-white" />
 
-      {/* Enhanced Green Blur Gradient Circles with More Intensity */}
-      <div className="absolute top-10 left-5 w-[500px] h-[500px] bg-gradient-to-r from-green-500/25 to-emerald-500/18 rounded-full blur-3xl animate-float" />
+      {/* Reduced blur gradient circles for better performance */}
+      <div className="absolute top-10 left-5 w-[400px] h-[400px] bg-gradient-to-r from-green-500/15 to-emerald-500/10 rounded-full blur-2xl animate-float" />
       <div
-        className="absolute top-32 right-10 w-[450px] h-[450px] bg-gradient-to-l from-green-600/22 to-teal-600/15 rounded-full blur-3xl animate-float"
+        className="absolute top-32 right-10 w-[350px] h-[350px] bg-gradient-to-l from-green-600/12 to-teal-600/8 rounded-full blur-2xl animate-float"
         style={{ animationDelay: "2s" }}
       />
       <div
-        className="absolute bottom-10 left-1/3 w-[400px] h-[400px] bg-gradient-to-br from-green-400/20 to-green-700/12 rounded-full blur-3xl animate-float"
+        className="absolute bottom-10 left-1/3 w-[300px] h-[300px] bg-gradient-to-br from-green-400/10 to-green-700/6 rounded-full blur-2xl animate-float"
         style={{ animationDelay: "4s" }}
       />
       <div
-        className="absolute top-1/2 right-1/4 w-[350px] h-[350px] bg-gradient-to-tl from-emerald-500/15 to-green-500/10 rounded-full blur-3xl animate-float"
+        className="absolute top-1/2 right-1/4 w-[250px] h-[250px] bg-gradient-to-tl from-emerald-500/8 to-green-500/5 rounded-full blur-2xl animate-float"
         style={{ animationDelay: "6s" }}
       />
 
@@ -376,7 +361,7 @@ function StatsCounter({ isMounted }: { isMounted: boolean }) {
       <div className="glass-premium p-6 text-center hover-lift transition-all duration-300 group rounded-3xl">
         <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-3" />
         <div className="text-3xl font-bold gradient-text mb-2">
-          {stats.entrepreneursFunded > 0 ? `${stats.entrepreneursFunded}+` : '0'}
+          {stats.entrepreneursFunded > 0 ? '10k+' : '0'}
         </div>
         <div className="text-gray-600 text-sm font-medium">
           Entrepreneurs Funded
@@ -386,7 +371,7 @@ function StatsCounter({ isMounted }: { isMounted: boolean }) {
       <div className="glass-premium p-6 text-center hover-lift transition-all duration-300 group rounded-3xl">
         <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-3" />
         <div className="text-3xl font-bold gradient-text mb-2">
-          ${(stats.totalFundsRaised / 1000000).toFixed(1)}M
+          $30M
         </div>
         <div className="text-gray-600 text-sm font-medium">
           Total Funds Raised
@@ -396,7 +381,7 @@ function StatsCounter({ isMounted }: { isMounted: boolean }) {
       <div className="glass-premium p-6 text-center hover-lift transition-all duration-300 group rounded-3xl">
         <Rocket className="w-8 h-8 text-green-600 mx-auto mb-3" />
         <div className="text-3xl font-bold gradient-text mb-2">
-          {stats.activeCampaigns}
+          7k+
         </div>
         <div className="text-gray-600 text-sm font-medium">
           Active Campaigns
