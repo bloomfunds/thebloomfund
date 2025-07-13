@@ -38,10 +38,8 @@ import {
   Users,
   Calendar,
   DollarSign,
-  Alert,
-  AlertDescription,
 } from "lucide-react";
-import { Alert as AlertComponent } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Campaign {
   id: string;
