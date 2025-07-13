@@ -1,7 +1,9 @@
 import Stripe from 'stripe';
 
 // Initialize Stripe with your secret key
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_dummy';
+
+export const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2025-02-24.acacia',
   typescript: true,
 });
@@ -37,6 +39,96 @@ export type PaymentIntentStatus = 'requires_payment_method' | 'requires_confirma
 // Campaign payout status
 export type PayoutStatus = 'not_eligible' | 'eligible' | 'requested' | 'processing' | 'paid' | 'failed' | 'expired';
 
+// Check if Stripe is properly configured
+export function isStripeConfigured(): boolean {
+  return !!(process.env.STRIPE_SECRET_KEY && 
+           process.env.STRIPE_SECRET_KEY !== 'sk_test_dummy' && 
+           process.env.STRIPE_SECRET_KEY.startsWith('sk_'));
+}
+
+// Create a Stripe Checkout Session for a donation
+export async function createCheckoutSession(params: {
+  amount: number;
+  currency: string;
+  campaignId: string;
+  campaignTitle: string;
+  donorName: string;
+  donorEmail: string;
+  isAnonymous: boolean;
+  message?: string;
+  rewardTierId?: string;
+  rewardTierTitle?: string;
+}): Promise<Stripe.Checkout.Session> {
+  const { 
+    amount, 
+    currency, 
+    campaignId, 
+    campaignTitle,
+    donorName, 
+    donorEmail, 
+    isAnonymous, 
+    message, 
+    rewardTierId,
+    rewardTierTitle 
+  } = params;
+
+  // Check if Stripe is properly configured
+  if (!isStripeConfigured()) {
+    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable. See STRIPE_SETUP.md for setup instructions.');
+  }
+
+  // Calculate platform fee
+  const platformFee = calculatePlatformFee(amount);
+  const amountAfterFee = amount - platformFee;
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price_data: {
+          currency: currency,
+          product_data: {
+            name: `Donation to ${campaignTitle}`,
+            description: rewardTierTitle || 'General Support',
+            images: ['https://thebloomfund.com/logo.png'],
+          },
+          unit_amount: amount,
+        },
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/campaigns/${campaignId}?success=true&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/campaigns/${campaignId}?canceled=true`,
+    customer_email: donorEmail,
+    metadata: {
+      campaign_id: campaignId,
+      campaign_title: campaignTitle,
+      donor_name: donorName,
+      donor_email: donorEmail,
+      is_anonymous: isAnonymous.toString(),
+      message: message || '',
+      reward_tier_id: rewardTierId || '',
+      reward_tier_title: rewardTierTitle || '',
+      platform_fee: platformFee.toString(),
+      amount_after_fee: amountAfterFee.toString(),
+    },
+    payment_intent_data: {
+      application_fee_amount: platformFee,
+      metadata: {
+        campaign_id: campaignId,
+        donor_name: donorName,
+        donor_email: donorEmail,
+        is_anonymous: isAnonymous.toString(),
+        message: message || '',
+        reward_tier_id: rewardTierId || '',
+      },
+    },
+  });
+
+  return session;
+}
+
 // Create a payment intent for a donation
 export async function createPaymentIntent(params: {
   amount: number;
@@ -51,8 +143,8 @@ export async function createPaymentIntent(params: {
   const { amount, currency, campaignId, donorName, donorEmail, isAnonymous, message, rewardTierId } = params;
 
   // Check if Stripe is properly configured
-  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_dummy') {
-    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable.');
+  if (!isStripeConfigured()) {
+    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable. See STRIPE_SETUP.md for setup instructions.');
   }
 
   // Calculate platform fee
@@ -89,8 +181,8 @@ export async function createConnectAccount(params: {
   const { email, businessName, firstName, lastName, phone } = params;
 
   // Check if Stripe is properly configured
-  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_dummy') {
-    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable.');
+  if (!isStripeConfigured()) {
+    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable. See STRIPE_SETUP.md for setup instructions.');
   }
 
   const account = await stripe.accounts.create({
@@ -133,8 +225,8 @@ export async function createPayout(params: {
   const { amount, currency, connectAccountId, campaignId, description } = params;
 
   // Check if Stripe is properly configured
-  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_dummy') {
-    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable.');
+  if (!isStripeConfigured()) {
+    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable. See STRIPE_SETUP.md for setup instructions.');
   }
 
   const transfer = await stripe.transfers.create({

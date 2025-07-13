@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Heart, Loader2, CreditCard, AlertCircle } from "lucide-react";
+import { Heart, Loader2, CreditCard, AlertCircle, CheckCircle, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DonationFormProps {
@@ -35,6 +35,27 @@ const DonationForm = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // Check for payment success from URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const sessionId = urlParams.get('session_id');
+    
+    if (success === 'true' && sessionId) {
+      // Payment was successful, show success state
+      setSuccess(true);
+      setPaymentData({
+        sessionId,
+        success: true
+      });
+      
+      // Clear URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +78,12 @@ const DonationForm = ({
         throw new Error("Minimum donation amount is $1.00");
       }
 
-      // Create payment intent
-      const response = await fetch("/api/payments/create-intent", {
+      // Get reward tier title if selected
+      const selectedTier = rewardTiers.find(t => t.id === selectedRewardTier);
+      const rewardTierTitle = selectedTier?.title;
+
+      // Check if we're in demo mode (no Stripe configured)
+      const response = await fetch("/api/payments/create-checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,28 +92,60 @@ const DonationForm = ({
           amount: amountInCents,
           currency: "usd",
           campaignId,
+          campaignTitle,
           donorName,
           donorEmail,
           isAnonymous,
           message,
           rewardTierId: selectedRewardTier || undefined,
+          rewardTierTitle,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.error && data.error.includes('Stripe is not properly configured')) {
+          // Enter demo mode
+          setIsDemoMode(true);
+          setSuccess(true);
+          setPaymentData({
+            amount: amountValue,
+            donorName,
+            donorEmail,
+            message,
+            isAnonymous,
+            rewardTierId: selectedRewardTier,
+            rewardTierTitle,
+            campaignId,
+            campaignTitle,
+            isDemo: true
+          });
+          return;
+        }
         throw new Error(data.error || "Failed to create payment");
       }
 
+      // Store pledge data for success page
+      const pledgeData = {
+        amount: amountValue,
+        donorName,
+        donorEmail,
+        message,
+        isAnonymous,
+        rewardTierId: selectedRewardTier,
+        rewardTierTitle,
+        campaignId,
+        campaignTitle,
+        sessionId: data.sessionId
+      };
+      localStorage.setItem('pledgeIntent', JSON.stringify(pledgeData));
+
       // Redirect to Stripe Checkout
-      if (data.clientSecret) {
-        // For now, show success message since Stripe Checkout integration needs to be completed
-        setSuccess(true);
-        // TODO: Implement Stripe Checkout redirect
-        // window.location.href = `/checkout?client_secret=${data.clientSecret}`;
+      if (data.url) {
+        window.location.href = data.url;
       } else {
-        throw new Error("No payment client secret received");
+        throw new Error("No checkout URL received");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -106,38 +163,141 @@ const DonationForm = ({
     }
   };
 
+  const resetForm = () => {
+    setSuccess(false);
+    setAmount("");
+    setDonorName("");
+    setDonorEmail("");
+    setMessage("");
+    setIsAnonymous(false);
+    setSelectedRewardTier("");
+    setPaymentData(null);
+    setError(null);
+    setIsDemoMode(false);
+  };
+
   if (success) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <Heart className="h-8 w-8 text-green-600" />
+            <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
           <CardTitle className="text-2xl font-bold text-green-600">
-            Thank You for Your Donation!
+            {isDemoMode ? "Demo Payment Successful!" : "Pledge Successful!"}
           </CardTitle>
           <CardDescription>
-            Your payment is being processed. You will receive a confirmation email shortly.
+            {isDemoMode 
+              ? "This is a demo of the payment flow. In production, this would be a real payment."
+              : "Thank you for supporting this amazing project"
+            }
           </CardDescription>
         </CardHeader>
-        <CardContent className="text-center">
-          <p className="text-muted-foreground mb-4">
-            Your generous contribution will help make this campaign a success.
-          </p>
-          <Button
-            onClick={() => {
-              setSuccess(false);
-              setAmount("");
-              setDonorName("");
-              setDonorEmail("");
-              setMessage("");
-              setIsAnonymous(false);
-              setSelectedRewardTier("");
-            }}
-            className="w-full"
-          >
-            Make Another Donation
-          </Button>
+        <CardContent className="space-y-6">
+          {isDemoMode && (
+            <Alert className="border-blue-200 bg-blue-50">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                <strong>Demo Mode:</strong> Stripe is not configured. To enable real payments, 
+                follow the setup guide in <code className="bg-blue-100 px-1 rounded">STRIPE_SETUP.md</code>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {paymentData && (
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold text-lg">Your Pledge Details</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Campaign:</span>
+                  <span className="font-medium">{campaignTitle}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Reward:</span>
+                  <span className="font-medium">
+                    {selectedRewardTier 
+                      ? rewardTiers.find(t => t.id === selectedRewardTier)?.title || "General Support"
+                      : "General Support"
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Amount:</span>
+                  <span className="font-medium">${parseFloat(amount).toFixed(2)}</span>
+                </div>
+                {isDemoMode && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Status:</span>
+                    <span className="font-medium text-blue-600">Demo Payment</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">What happens next?</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-blue-600 text-xs font-bold">1</span>
+                </div>
+                <div>
+                  <h4 className="font-medium">Confirmation Email</h4>
+                  <p className="text-sm text-gray-600">You'll receive a confirmation email with your pledge details</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-blue-600 text-xs font-bold">2</span>
+                </div>
+                <div>
+                  <h4 className="font-medium">Campaign Updates</h4>
+                  <p className="text-sm text-gray-600">Get notified about campaign progress and updates</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-blue-600 text-xs font-bold">3</span>
+                </div>
+                <div>
+                  <h4 className="font-medium">Reward Fulfillment</h4>
+                  <p className="text-sm text-gray-600">You'll be contacted about your reward when the campaign ends</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={() => window.history.back()}
+              variant="outline"
+              className="flex-1"
+            >
+              Back to Campaign
+            </Button>
+            <Button
+              onClick={() => window.location.href = '/campaigns'}
+              className="flex-1"
+            >
+              Explore More
+            </Button>
+          </div>
+
+          <div className="text-center pt-4 border-t">
+            <p className="text-sm text-gray-600 mb-3">Help spread the word!</p>
+            <Button
+              onClick={() => {
+                const url = window.location.href;
+                const text = `I just supported ${campaignTitle} on Bloom! Check it out:`;
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+              }}
+              variant="outline"
+              size="sm"
+            >
+              Share Campaign
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -285,19 +445,20 @@ const DonationForm = ({
               {isProcessing ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Processing...
+                  Processing Payment...
                 </>
               ) : (
                 <>
                   <CreditCard className="mr-2 h-5 w-5" />
-                  Donate ${amount ? parseFloat(amount).toFixed(2) : "0.00"}
+                  Complete Pledge - ${amount ? parseFloat(amount).toFixed(2) : "0.00"}
                 </>
               )}
             </Button>
 
-            <div className="text-center text-sm text-gray-600">
-              <p>Secure payment powered by Stripe</p>
+            <div className="text-center text-sm text-gray-600 space-y-1">
+              <p>🔒 Secure payment powered by Stripe</p>
               <p>Platform fee: 5% + $0.30 per donation</p>
+              <p>Your payment information is encrypted and secure</p>
             </div>
           </CardContent>
         </form>

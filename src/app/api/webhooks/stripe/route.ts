@@ -29,6 +29,10 @@ export async function POST(req: NextRequest) {
 
   try {
     switch (event.type as string) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object);
+        break;
+
       case 'payment_intent.succeeded':
         await handlePaymentSucceeded(event.data.object);
         break;
@@ -60,6 +64,55 @@ export async function POST(req: NextRequest) {
       { error: 'Webhook handler failed' },
       { status: 500 }
     );
+  }
+}
+
+async function handleCheckoutSessionCompleted(session: any) {
+  console.log('Checkout session completed:', session.id);
+
+  const {
+    id: sessionId,
+    payment_intent: paymentIntentId,
+    metadata,
+    customer_email,
+    amount_total,
+    currency,
+  } = session;
+
+  const {
+    campaign_id: campaignId,
+    campaign_title: campaignTitle,
+    donor_name: donorName,
+    donor_email: donorEmail,
+    is_anonymous: isAnonymous,
+    message,
+    reward_tier_id: rewardTierId,
+    reward_tier_title: rewardTierTitle,
+  } = metadata;
+
+  try {
+    // Create payment record in database
+    const payment = await createPayment({
+      campaign_id: campaignId,
+      user_id: undefined, // Will be updated if user is logged in
+      amount: amount_total / 100, // Convert from cents to dollars
+      currency: currency.toUpperCase(),
+      status: 'succeeded',
+      donor_name: donorName ?? '',
+      is_anonymous: isAnonymous === 'true',
+      payment_method: 'stripe',
+      transaction_id: paymentIntentId || sessionId,
+      reward_tier_id: rewardTierId || undefined,
+      message: message || undefined,
+    });
+
+    // Campaign funding is automatically updated by the createPayment function
+    console.log('Campaign funding updated for:', campaignId, 'Amount:', amount_total / 100);
+
+    console.log('Payment processed successfully:', payment.id);
+  } catch (error) {
+    console.error('Error processing checkout session:', error);
+    throw error;
   }
 }
 
