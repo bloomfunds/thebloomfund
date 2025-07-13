@@ -985,7 +985,7 @@ export default function HomePage() {
                 className="border-2 border-white/30 text-white hover:bg-white/10 rounded-2xl px-6 sm:px-8 py-3 sm:py-4 font-semibold text-base sm:text-lg backdrop-blur-sm w-full sm:w-auto mobile-button"
                 asChild
               >
-                <Link href="/campaigns" className="text-white">
+                <Link href="/campaigns" className="text-white hover:text-white">
                   Explore Campaigns{" "}
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>

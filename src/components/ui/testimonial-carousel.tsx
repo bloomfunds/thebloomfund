@@ -39,7 +39,7 @@ const testimonials: Testimonial[] = [
       "Bloom helped me raise $45K for my artisan bakery in just 3 months. The platform made it easy to connect with supporters who believed in my vision!",
     metrics: {
       funded: "$45K",
-      growth: "+320%",
+      growth: "+85%",
       platform: "Food & Beverage",
     },
     verified: true,
@@ -119,7 +119,7 @@ const testimonials: Testimonial[] = [
       "The fintech tools I developed needed initial funding. Bloom's community helped me raise $120K and my financial app now serves thousands of users!",
     metrics: {
       funded: "$120K",
-      growth: "+650%",
+      growth: "+120%",
       platform: "Technology",
     },
     verified: true,
@@ -215,7 +215,7 @@ const testimonials: Testimonial[] = [
       "My specialty coffee roastery went from idea to reality thanks to Bloom. Raised $42K in 3 months and now we supply cafes across three states!",
     metrics: {
       funded: "$42K",
-      growth: "+746%",
+      growth: "+95%",
       platform: "Food & Beverage",
     },
     verified: true,
@@ -247,7 +247,7 @@ const testimonials: Testimonial[] = [
       "Pet care products were my passion project. Through Bloom, I raised $134K and now my organic pet food line is in stores nationwide!",
     metrics: {
       funded: "$134K",
-      growth: "+567%",
+      growth: "+110%",
       platform: "Retail",
     },
     verified: true,
@@ -295,7 +295,7 @@ const testimonials: Testimonial[] = [
       "My comedy club needed renovation funding. Bloom's community raised $83K and now we're the premier entertainment venue in our city!",
     metrics: {
       funded: "$83K",
-      growth: "+407%",
+      growth: "+95%",
       platform: "Entertainment",
     },
     verified: true,

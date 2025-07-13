@@ -59,6 +59,7 @@ type FormData = {
   businessName: string;
   businessDescription: string;
   businessCategory: string;
+  otherCategory: string;
   location: string;
   website?: string;
   fundingGoal: number;
@@ -88,6 +89,7 @@ const defaultFormData: FormData = {
   businessName: "",
   businessDescription: "",
   businessCategory: "",
+  otherCategory: "",
   location: "",
   website: "",
   fundingGoal: 5000,
@@ -172,7 +174,7 @@ export default function CampaignForm() {
     const step = steps[stepIndex];
     switch (step.id) {
       case "category":
-        return !!formData.businessCategory;
+        return !!formData.businessCategory && (formData.businessCategory !== "other" || !!formData.otherCategory.trim());
       case "basics":
         return !!(
           formData.title.trim() &&
@@ -206,6 +208,8 @@ export default function CampaignForm() {
       case "category":
         if (!formData.businessCategory)
           errors.push("Please select a business category");
+        if (formData.businessCategory === "other" && !formData.otherCategory.trim())
+          errors.push("Please describe your business category");
         break;
       case "basics":
         if (!formData.title.trim()) errors.push("Campaign title is required");
@@ -359,7 +363,7 @@ export default function CampaignForm() {
         owner_name: ownerName,
         owner_id: currentUser.id,
         funding_goal: Math.round(formData.fundingGoal),
-        category: formData.businessCategory.toLowerCase(),
+        category: formData.businessCategory === "other" ? formData.otherCategory.trim().toLowerCase() : formData.businessCategory.toLowerCase(),
         location: formData.location.trim(),
         website: formData.website?.trim() || undefined,
         cover_image:
@@ -625,6 +629,26 @@ export default function CampaignForm() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {formData.businessCategory === "other" && (
+                  <div>
+                    <Label htmlFor="otherCategory" className="text-base font-semibold">
+                      Please describe your category *
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Tell us more about your business category
+                    </p>
+                    <Input
+                      id="otherCategory"
+                      placeholder="e.g., Renewable Energy, Blockchain, etc."
+                      value={formData.otherCategory}
+                      onChange={(e) =>
+                        handleInputChange("otherCategory", e.target.value)
+                      }
+                      className="h-12 text-base"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -721,7 +745,7 @@ export default function CampaignForm() {
                   </p>
                   <Textarea
                     id="businessDescription"
-                    placeholder="Tell us your story and other info..."
+                    placeholder="Tell us your story"
                     className="min-h-[150px] text-base"
                     value={formData.businessDescription}
                     onChange={(e) =>
