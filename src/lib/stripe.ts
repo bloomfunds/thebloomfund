@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
 // Initialize Stripe with your secret key
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
   apiVersion: '2025-02-24.acacia',
   typescript: true,
 });
@@ -50,6 +50,11 @@ export async function createPaymentIntent(params: {
 }): Promise<Stripe.PaymentIntent> {
   const { amount, currency, campaignId, donorName, donorEmail, isAnonymous, message, rewardTierId } = params;
 
+  // Check if Stripe is properly configured
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_dummy') {
+    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable.');
+  }
+
   // Calculate platform fee
   const platformFee = calculatePlatformFee(amount);
   const amountAfterFee = amount - platformFee;
@@ -82,6 +87,11 @@ export async function createConnectAccount(params: {
   phone?: string;
 }): Promise<Stripe.Account> {
   const { email, businessName, firstName, lastName, phone } = params;
+
+  // Check if Stripe is properly configured
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_dummy') {
+    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable.');
+  }
 
   const account = await stripe.accounts.create({
     type: 'express',
@@ -121,6 +131,11 @@ export async function createPayout(params: {
   description: string;
 }): Promise<Stripe.Transfer> {
   const { amount, currency, connectAccountId, campaignId, description } = params;
+
+  // Check if Stripe is properly configured
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_dummy') {
+    throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable.');
+  }
 
   const transfer = await stripe.transfers.create({
     amount,

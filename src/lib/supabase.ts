@@ -10,24 +10,28 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Production Supabase client with enhanced configuration
-export const supabase = createClient<Database>(supabaseUrl || '', supabaseAnonKey || '', {
+export const supabase = createClient<Database>(
+  supabaseUrl || 'https://dummy.supabase.co', 
+  supabaseAnonKey || 'dummy-key', 
+  {
     auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
     },
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'thebloomfund-web',
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
     },
-  },
-});
+    global: {
+      headers: {
+        'X-Client-Info': 'thebloomfund-web',
+      },
+    },
+  }
+);
 
 // Enhanced error handling and retry logic
 class SupabaseService {
@@ -68,6 +72,11 @@ class SupabaseService {
   // Enhanced authentication methods
   async signUp(email: string, password: string, userData?: any) {
     return this.withRetry(async () => {
+      // Check if Supabase is properly configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error('Supabase is not properly configured. Please set environment variables.');
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
