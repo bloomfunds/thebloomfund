@@ -502,7 +502,7 @@ export default function CampaignForm() {
 
         {/* Step Indicator */}
         <div className="flex items-center justify-center mb-8 overflow-x-auto">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = index === currentStep;
@@ -530,7 +530,7 @@ export default function CampaignForm() {
                   </div>
                   {index < steps.length - 1 && (
                     <div
-                      className={`w-16 h-0.5 mx-2 transition-colors duration-300 ${
+                      className={`w-12 h-0.5 mx-1 transition-colors duration-300 ${
                         isCompleted ? "bg-green-500" : "bg-muted-foreground/20"
                       }`}
                     />
