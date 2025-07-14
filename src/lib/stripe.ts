@@ -19,18 +19,10 @@ export const STRIPE_FEE_FIXED = 30; // $0.30 in cents
 // Calculate the total amount needed to ensure we get our full platform fee
 // This accounts for both Stripe fees and our platform fees
 export function calculateTotalAmountForPlatformFee(desiredNetAmount: number): number {
-  // We want to receive: desiredNetAmount - platformFee
-  // Stripe will take: totalAmount * 0.029 + 0.30
-  // So: totalAmount - (totalAmount * 0.029 + 0.30) - platformFee = desiredNetAmount
-  // Solving for totalAmount:
-  // totalAmount * (1 - 0.029) - 0.30 - platformFee = desiredNetAmount
-  // totalAmount * 0.971 - 0.30 - platformFee = desiredNetAmount
-  // totalAmount = (desiredNetAmount + 0.30 + platformFee) / 0.971
-  
+  // For now, we'll charge the platform fee on top of the donation amount
+  // This means if someone wants to donate $100, they pay $100 + platform fee
   const platformFee = Math.round(desiredNetAmount * (PLATFORM_FEE_PERCENTAGE / 100)) + PLATFORM_FEE_FIXED;
-  const totalAmount = Math.round((desiredNetAmount + STRIPE_FEE_FIXED + platformFee) / (1 - STRIPE_FEE_PERCENTAGE / 100));
-  
-  return totalAmount;
+  return desiredNetAmount + platformFee;
 }
 
 // Calculate platform fee from the total amount
@@ -100,8 +92,8 @@ export async function createCheckoutSession(params: {
 
   // Calculate the total amount needed to ensure we get our full platform fee
   const totalAmount = calculateTotalAmountForPlatformFee(amount);
-  const platformFee = calculatePlatformFee(totalAmount);
-  const amountAfterFee = totalAmount - platformFee;
+  const platformFee = calculatePlatformFee(amount);
+  const amountAfterFee = amount; // The campaign gets the original amount
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -136,17 +128,6 @@ export async function createCheckoutSession(params: {
       amount_after_fee: amountAfterFee.toString(),
       original_amount: amount.toString(), // Store the original requested amount
     },
-    payment_intent_data: {
-      application_fee_amount: platformFee,
-      metadata: {
-        campaign_id: campaignId,
-        donor_name: donorName,
-        donor_email: donorEmail,
-        is_anonymous: isAnonymous.toString(),
-        message: message || '',
-        reward_tier_id: rewardTierId || '',
-      },
-    },
   });
 
   return session;
@@ -172,13 +153,12 @@ export async function createPaymentIntent(params: {
 
   // Calculate the total amount needed to ensure we get our full platform fee
   const totalAmount = calculateTotalAmountForPlatformFee(amount);
-  const platformFee = calculatePlatformFee(totalAmount);
-  const amountAfterFee = totalAmount - platformFee;
+  const platformFee = calculatePlatformFee(amount);
+  const amountAfterFee = amount; // The campaign gets the original amount
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: totalAmount, // Use the calculated total amount
     currency,
-    application_fee_amount: platformFee,
     metadata: {
       campaign_id: campaignId,
       donor_name: donorName,
@@ -187,6 +167,8 @@ export async function createPaymentIntent(params: {
       message: message || '',
       reward_tier_id: rewardTierId || '',
       original_amount: amount.toString(), // Store the original requested amount
+      platform_fee: platformFee.toString(),
+      amount_after_fee: amountAfterFee.toString(),
     },
     receipt_email: donorEmail,
     description: `Donation to campaign ${campaignId}`,

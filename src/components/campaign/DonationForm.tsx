@@ -484,11 +484,16 @@ const DonationForm = ({
                 </span>
                 <Input
                   id="amount"
-                  type="number"
-                  min="10"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow numbers, decimals, and backspace
+                    if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+                      setAmount(value);
+                    }
+                  }}
                   placeholder="0.00"
                   className="pl-8"
                   required
@@ -565,10 +570,31 @@ const DonationForm = ({
               ) : (
                 <>
                   <CreditCard className="mr-2 h-5 w-5" />
-                  Complete Pledge - ${amount ? parseFloat(amount).toFixed(2) : "0.00"}
+                  Complete Pledge - ${amount ? (parseFloat(amount) + (parseFloat(amount) * 0.05) + 0.30).toFixed(2) : "0.00"}
                 </>
               )}
             </Button>
+
+            {/* Fee Breakdown */}
+            {amount && parseFloat(amount) > 0 && (
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                <h4 className="font-semibold text-gray-900">Payment Breakdown</h4>
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Donation Amount:</span>
+                    <span className="font-medium">${parseFloat(amount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Platform Fee (5% + $0.30):</span>
+                    <span className="font-medium">${((parseFloat(amount) * 0.05) + 0.30).toFixed(2)}</span>
+                  </div>
+                  <div className="border-t pt-1 flex justify-between font-semibold">
+                    <span className="text-gray-900">Total Payment:</span>
+                    <span className="text-gray-900">${(parseFloat(amount) + (parseFloat(amount) * 0.05) + 0.30).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="text-center text-sm text-gray-600 space-y-1">
               <p>🔒 Secure payment powered by Stripe</p>
