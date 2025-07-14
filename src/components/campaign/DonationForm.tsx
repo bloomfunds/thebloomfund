@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Heart, Loader2, CreditCard, AlertCircle, CheckCircle, Info } from "lucide-react";
+import { Heart, Loader2, CreditCard, AlertCircle, CheckCircle, Info, LogIn } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getCurrentUser } from "@/lib/supabase";
+import Link from "next/link";
 
 interface DonationFormProps {
   campaignId: string;
@@ -37,6 +39,29 @@ const DonationForm = ({
   const [success, setSuccess] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { user, error } = await getCurrentUser();
+        setIsAuthenticated(!!user);
+        if (user) {
+          setDonorEmail(user.email || "");
+          setDonorName(user.user_metadata?.full_name || "");
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoadingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   // Check for payment success from URL params
   useEffect(() => {
@@ -74,8 +99,8 @@ const DonationForm = ({
       }
       
       const amountInCents = Math.round(amountValue * 100);
-      if (amountInCents < 500) {
-        throw new Error("Minimum donation amount is $5.00");
+      if (amountInCents < 1000) {
+        throw new Error("Minimum donation amount is $10.00");
       }
 
       // Get reward tier title if selected
@@ -190,6 +215,59 @@ const DonationForm = ({
     setError(null);
     setIsDemoMode(false);
   };
+
+  if (isLoadingAuth) {
+    return (
+      <div className="w-full max-w-2xl mx-auto">
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mr-3" />
+            <span className="text-lg font-medium">Loading...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full max-w-2xl mx-auto">
+        <Card>
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+              <LogIn className="h-8 w-8 text-blue-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              Sign In to Donate
+            </CardTitle>
+            <CardDescription className="text-lg text-gray-600">
+              You need to create an account or sign in to make a donation
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center space-y-4">
+              <p className="text-gray-600">
+                Join our community to support amazing projects and track your donations.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button asChild className="bg-green-600 hover:bg-green-700">
+                  <Link href="/auth/signin">
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/auth/signup">
+                    Create Account
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -376,8 +454,8 @@ const DonationForm = ({
             {/* Preset Amounts */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Quick Amount</Label>
-              <div className="grid grid-cols-3 gap-3">
-                {[5, 10, 25, 50, 100, 250].map((presetAmount) => (
+              <div className="grid grid-cols-4 gap-3">
+                {[10, 25, 50, 100].map((presetAmount) => (
                   <Button
                     key={presetAmount}
                     type="button"
@@ -407,7 +485,7 @@ const DonationForm = ({
                 <Input
                   id="amount"
                   type="number"
-                  min="5"
+                  min="10"
                   step="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
@@ -416,7 +494,7 @@ const DonationForm = ({
                   required
                 />
               </div>
-              <p className="text-sm text-gray-600">Minimum donation: $5.00</p>
+              <p className="text-sm text-gray-600">Minimum donation: $10.00</p>
             </div>
 
             {/* Donor Information */}

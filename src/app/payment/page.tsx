@@ -38,8 +38,10 @@ import {
   Users,
   Calendar,
   DollarSign,
+  LogIn,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getCurrentUser } from "@/lib/supabase";
 
 interface Campaign {
   id: string;
@@ -90,6 +92,8 @@ export default function PaymentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [pledgeData, setPledgeData] = useState<PledgeData>({
     campaignId: "",
     campaignTitle: "",
@@ -105,6 +109,31 @@ export default function PaymentPage() {
   const campaignId = searchParams.get("campaign");
   const tierId = searchParams.get("tier");
   const amount = searchParams.get("amount");
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { user, error } = await getCurrentUser();
+        setIsAuthenticated(!!user);
+        if (user) {
+          setPledgeData(prev => ({
+            ...prev,
+            email: user.email || "",
+            firstName: user.user_metadata?.full_name?.split(' ')[0] || "",
+            lastName: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || "",
+          }));
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoadingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     if (campaignId) {
@@ -332,6 +361,59 @@ export default function PaymentPage() {
     }
   };
 
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mr-3" />
+            <span className="text-lg font-medium">Loading...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+              <LogIn className="h-8 w-8 text-blue-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              Sign In to Donate
+            </CardTitle>
+            <CardDescription className="text-lg text-gray-600">
+              You need to create an account or sign in to make a donation
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center space-y-4">
+              <p className="text-gray-600">
+                Join our community to support amazing projects and track your donations.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button asChild className="bg-green-600 hover:bg-green-700">
+                  <Link href="/auth/signin">
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/auth/signup">
+                    Create Account
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-background flex items-center justify-center">
@@ -470,8 +552,8 @@ export default function PaymentPage() {
                       {/* Preset Amounts */}
                       <div className="mb-6">
                         <Label className="text-base font-medium">Quick Amount</Label>
-                        <div className="grid grid-cols-3 gap-3 mt-2">
-                          {[5, 10, 25, 50, 100, 250].map((presetAmount) => (
+                        <div className="grid grid-cols-4 gap-3 mt-2">
+                          {[10, 25, 50, 100].map((presetAmount) => (
                             <Button
                               key={presetAmount}
                               type="button"
@@ -500,11 +582,11 @@ export default function PaymentPage() {
                             value={customAmount || ""}
                             onChange={(e) => handleCustomAmountChange(e.target.value)}
                             className="pl-10 h-12 text-lg"
-                            min="5"
+                            min="10"
                             step="0.01"
                           />
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">Minimum $5</p>
+                        <p className="text-sm text-gray-600 mt-1">Minimum $10</p>
                       </div>
 
                       {/* Reward Tiers */}

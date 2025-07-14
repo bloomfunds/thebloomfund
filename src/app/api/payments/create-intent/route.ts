@@ -24,10 +24,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate amount (minimum $5)
-    if (amount < 500) { // $5.00 in cents
+    // Validate amount (minimum $10)
+    if (amount < 1000) { // $10.00 in cents
       return NextResponse.json(
-        { error: 'Minimum donation amount is $5.00' },
+        { error: 'Minimum donation amount is $10.00' },
         { status: 400 }
       );
     }
