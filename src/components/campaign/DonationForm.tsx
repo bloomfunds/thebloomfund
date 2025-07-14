@@ -106,29 +106,44 @@ const DonationForm = ({
 
       if (!response.ok) {
         if (data.error && data.error.includes('Stripe is not properly configured')) {
-          // Enter demo mode
-          setIsDemoMode(true);
-          setSuccess(true);
-          setPaymentData({
-            amount: amountValue,
-            donorName,
-            donorEmail,
-            message,
-            isAnonymous,
-            rewardTierId: selectedRewardTier,
-            rewardTierTitle,
-            campaignId,
-            campaignTitle,
-            isDemo: true
-          });
-          return;
+                  // Enter demo mode
+        setIsDemoMode(true);
+        setSuccess(true);
+        setPaymentData({
+          amount: amountInCents, // Store in cents to match Stripe format
+          donorName,
+          donorEmail,
+          message,
+          isAnonymous,
+          rewardTierId: selectedRewardTier,
+          rewardTierTitle,
+          campaignId,
+          campaignTitle,
+          isDemo: true
+        });
+        
+        // Store pledge data for demo mode
+        const pledgeData = {
+          amount: amountInCents,
+          donorName,
+          donorEmail,
+          message,
+          isAnonymous,
+          rewardTierId: selectedRewardTier,
+          rewardTierTitle,
+          campaignId,
+          campaignTitle,
+          isDemo: true
+        };
+        localStorage.setItem('pledgeIntent', JSON.stringify(pledgeData));
+        return;
         }
         throw new Error(data.error || "Failed to create payment");
       }
 
       // Store pledge data for success page
       const pledgeData = {
-        amount: amountValue,
+        amount: amountInCents, // Store in cents to match Stripe format
         donorName,
         donorEmail,
         message,
@@ -223,7 +238,7 @@ const DonationForm = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Amount:</span>
-                  <span className="font-medium">${parseFloat(amount).toFixed(2)}</span>
+                  <span className="font-medium">${((paymentData.amount || 0) / 100).toFixed(2)}</span>
                 </div>
                 {isDemoMode && (
                   <div className="flex justify-between">

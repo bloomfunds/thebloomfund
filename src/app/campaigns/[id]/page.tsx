@@ -361,7 +361,7 @@ export default function CampaignPage({ params }: CampaignPageProps) {
                       localStorage.setItem('pledgeIntent', JSON.stringify(pledgeIntent));
                       
                       // Redirect to payment page
-                      window.location.href = `/payment?campaign=${campaign.id}&amount=0`;
+                      window.location.href = `/payment?campaign=${campaign.id}`;
                     }}
                   >
                     <Heart className="w-6 h-6 mr-3" />

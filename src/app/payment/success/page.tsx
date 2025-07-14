@@ -73,7 +73,7 @@ export default function PaymentSuccessPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Amount:</span>
                   <span className="font-bold text-green-600 text-lg">
-                    ${((pledgeData.amount || 0) / 100).toFixed(2)}
+                    ${pledgeData.amount ? ((pledgeData.amount / 100).toFixed(2)) : "0.00"}
                   </span>
                 </div>
               </div>

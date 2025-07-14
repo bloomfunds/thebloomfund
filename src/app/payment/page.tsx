@@ -114,57 +114,40 @@ export default function PaymentPage() {
 
   const fetchCampaign = async () => {
     try {
-      // In a real app, this would fetch from your API
-      // For now, we'll use mock data
-      const mockCampaign: Campaign = {
-        id: campaignId!,
-        title: "Revolutionary Coffee Roastery",
-        description: "A state-of-the-art coffee roastery that combines traditional craftsmanship with modern technology.",
-        business_name: "Bloom Coffee Co.",
-        owner_name: "Sarah Martinez",
-        owner_avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80",
-        cover_image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&q=80",
-        funding_goal: 50000,
-        current_funding: 35000,
-        start_date: "2024-01-15",
-        end_date: "2024-03-15",
-        location: "San Francisco, CA",
-        category: "Food & Beverage",
-        reward_tiers: [
-          {
-            id: "tier1",
-            amount: 2500,
-            title: "Coffee Lover",
-            description: "Get a bag of our signature blend coffee and a personalized thank you note.",
-            display_order: 1,
-          },
-          {
-            id: "tier2",
-            amount: 5000,
-            title: "Barista Starter",
-            description: "Receive our premium coffee blend, a custom mug, and an invitation to our opening event.",
-            display_order: 2,
-          },
-          {
-            id: "tier3",
-            amount: 10000,
-            title: "Coffee Connoisseur",
-            description: "Get everything from the Barista Starter plus a private coffee tasting session.",
-            display_order: 3,
-          },
-        ],
+      // Fetch real campaign data from the database
+      const response = await fetch(`/api/campaigns/${campaignId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch campaign');
+      }
+      
+      const campaignData = await response.json();
+      const campaign: Campaign = {
+        id: campaignData.id,
+        title: campaignData.title,
+        description: campaignData.description,
+        business_name: campaignData.business_name,
+        owner_name: campaignData.owner_name,
+        owner_avatar: campaignData.owner_avatar,
+        cover_image: campaignData.cover_image,
+        funding_goal: campaignData.funding_goal,
+        current_funding: campaignData.current_funding || 0,
+        start_date: campaignData.start_date,
+        end_date: campaignData.end_date,
+        location: campaignData.location,
+        category: campaignData.category,
+        reward_tiers: campaignData.reward_tiers || [],
       };
 
-      setCampaign(mockCampaign);
+      setCampaign(campaign);
       setPledgeData(prev => ({
         ...prev,
         campaignId: campaignId!,
-        campaignTitle: mockCampaign.title,
+        campaignTitle: campaign.title,
       }));
 
       // Set selected tier if provided
-      if (tierId && mockCampaign.reward_tiers) {
-        const tier = mockCampaign.reward_tiers.find(t => t.id === tierId);
+      if (tierId && campaign.reward_tiers) {
+        const tier = campaign.reward_tiers.find((t: RewardTier) => t.id === tierId);
         if (tier) {
           setSelectedTier(tier);
           setPledgeData(prev => ({
@@ -265,10 +248,68 @@ export default function PaymentPage() {
   };
 
   const handleSubmit = async () => {
-    // Here you would process the payment
-    console.log("Processing payment:", pledgeData);
-    // Redirect to payment processing or success page
-    router.push(`/payment/success?campaign=${campaignId}`);
+    try {
+      // Validate required fields
+      if (!pledgeData.amount || pledgeData.amount <= 0) {
+        setError("Please select a valid amount");
+        return;
+      }
+
+      if (!pledgeData.firstName || !pledgeData.lastName || !pledgeData.email) {
+        setError("Please fill in all required fields");
+        return;
+      }
+
+      // Create checkout session
+      const response = await fetch("/api/payments/create-checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: pledgeData.amount,
+          currency: "usd",
+          campaignId: pledgeData.campaignId,
+          campaignTitle: pledgeData.campaignTitle,
+          donorName: `${pledgeData.firstName} ${pledgeData.lastName}`,
+          donorEmail: pledgeData.email,
+          isAnonymous: pledgeData.isAnonymous,
+          message: pledgeData.message,
+          rewardTierId: pledgeData.tierId,
+          rewardTierTitle: pledgeData.tierTitle,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create payment");
+      }
+
+      // Store pledge data for success page
+      const pledgeIntent = {
+        amount: pledgeData.amount,
+        donorName: `${pledgeData.firstName} ${pledgeData.lastName}`,
+        donorEmail: pledgeData.email,
+        message: pledgeData.message,
+        isAnonymous: pledgeData.isAnonymous,
+        rewardTierId: pledgeData.tierId,
+        rewardTierTitle: pledgeData.tierTitle,
+        campaignId: pledgeData.campaignId,
+        campaignTitle: pledgeData.campaignTitle,
+        sessionId: data.sessionId
+      };
+      localStorage.setItem('pledgeIntent', JSON.stringify(pledgeIntent));
+
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "An error occurred");
+    }
   };
 
   if (isLoading) {
