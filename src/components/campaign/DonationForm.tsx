@@ -74,8 +74,8 @@ const DonationForm = ({
       }
       
       const amountInCents = Math.round(amountValue * 100);
-      if (amountInCents < 100) {
-        throw new Error("Minimum donation amount is $1.00");
+      if (amountInCents < 500) {
+        throw new Error("Minimum donation amount is $5.00");
       }
 
       // Get reward tier title if selected
@@ -373,10 +373,32 @@ const DonationForm = ({
               </div>
             )}
 
+            {/* Preset Amounts */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Quick Amount</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {[5, 10, 25, 50, 100, 250].map((presetAmount) => (
+                  <Button
+                    key={presetAmount}
+                    type="button"
+                    variant="outline"
+                    className={`h-12 ${
+                      amount === presetAmount.toString() 
+                        ? "border-green-500 bg-green-50 text-green-700" 
+                        : "hover:border-green-300"
+                    }`}
+                    onClick={() => setAmount(presetAmount.toString())}
+                  >
+                    ${presetAmount}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             {/* Custom Amount */}
             <div className="space-y-2">
               <Label htmlFor="amount" className="text-base font-semibold">
-                Donation Amount
+                Custom Amount
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
@@ -385,7 +407,7 @@ const DonationForm = ({
                 <Input
                   id="amount"
                   type="number"
-                  min="1"
+                  min="5"
                   step="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
@@ -394,7 +416,7 @@ const DonationForm = ({
                   required
                 />
               </div>
-              <p className="text-sm text-gray-600">Minimum donation: $1.00</p>
+              <p className="text-sm text-gray-600">Minimum donation: $5.00</p>
             </div>
 
             {/* Donor Information */}
@@ -473,6 +495,7 @@ const DonationForm = ({
             <div className="text-center text-sm text-gray-600 space-y-1">
               <p>🔒 Secure payment powered by Stripe</p>
               <p>Platform fee: 5% + $0.30 per donation</p>
+              <p>Stripe processing fee: 2.9% + $0.30 (included in total)</p>
               <p>Your payment information is encrypted and secure</p>
             </div>
           </CardContent>

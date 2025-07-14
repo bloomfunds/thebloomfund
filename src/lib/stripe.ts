@@ -12,7 +12,28 @@ export const stripe = new Stripe(stripeSecretKey, {
 export const PLATFORM_FEE_PERCENTAGE = 5; // 5%
 export const PLATFORM_FEE_FIXED = 30; // $0.30 in cents
 
-// Calculate platform fee
+// Stripe fee configuration (2.9% + $0.30)
+export const STRIPE_FEE_PERCENTAGE = 2.9; // 2.9%
+export const STRIPE_FEE_FIXED = 30; // $0.30 in cents
+
+// Calculate the total amount needed to ensure we get our full platform fee
+// This accounts for both Stripe fees and our platform fees
+export function calculateTotalAmountForPlatformFee(desiredNetAmount: number): number {
+  // We want to receive: desiredNetAmount - platformFee
+  // Stripe will take: totalAmount * 0.029 + 0.30
+  // So: totalAmount - (totalAmount * 0.029 + 0.30) - platformFee = desiredNetAmount
+  // Solving for totalAmount:
+  // totalAmount * (1 - 0.029) - 0.30 - platformFee = desiredNetAmount
+  // totalAmount * 0.971 - 0.30 - platformFee = desiredNetAmount
+  // totalAmount = (desiredNetAmount + 0.30 + platformFee) / 0.971
+  
+  const platformFee = Math.round(desiredNetAmount * (PLATFORM_FEE_PERCENTAGE / 100)) + PLATFORM_FEE_FIXED;
+  const totalAmount = Math.round((desiredNetAmount + STRIPE_FEE_FIXED + platformFee) / (1 - STRIPE_FEE_PERCENTAGE / 100));
+  
+  return totalAmount;
+}
+
+// Calculate platform fee from the total amount
 export function calculatePlatformFee(amount: number): number {
   const percentageFee = Math.round(amount * (PLATFORM_FEE_PERCENTAGE / 100));
   return percentageFee + PLATFORM_FEE_FIXED;
@@ -77,9 +98,10 @@ export async function createCheckoutSession(params: {
     throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable. See STRIPE_SETUP.md for setup instructions.');
   }
 
-  // Calculate platform fee
-  const platformFee = calculatePlatformFee(amount);
-  const amountAfterFee = amount - platformFee;
+  // Calculate the total amount needed to ensure we get our full platform fee
+  const totalAmount = calculateTotalAmountForPlatformFee(amount);
+  const platformFee = calculatePlatformFee(totalAmount);
+  const amountAfterFee = totalAmount - platformFee;
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -92,7 +114,7 @@ export async function createCheckoutSession(params: {
             description: rewardTierTitle || 'General Support',
             images: ['https://thebloomfund.com/logo.png'],
           },
-          unit_amount: amount,
+          unit_amount: totalAmount, // Use the calculated total amount
         },
         quantity: 1,
       },
@@ -112,6 +134,7 @@ export async function createCheckoutSession(params: {
       reward_tier_title: rewardTierTitle || '',
       platform_fee: platformFee.toString(),
       amount_after_fee: amountAfterFee.toString(),
+      original_amount: amount.toString(), // Store the original requested amount
     },
     payment_intent_data: {
       application_fee_amount: platformFee,
@@ -147,12 +170,13 @@ export async function createPaymentIntent(params: {
     throw new Error('Stripe is not properly configured. Please set STRIPE_SECRET_KEY environment variable. See STRIPE_SETUP.md for setup instructions.');
   }
 
-  // Calculate platform fee
-  const platformFee = calculatePlatformFee(amount);
-  const amountAfterFee = amount - platformFee;
+  // Calculate the total amount needed to ensure we get our full platform fee
+  const totalAmount = calculateTotalAmountForPlatformFee(amount);
+  const platformFee = calculatePlatformFee(totalAmount);
+  const amountAfterFee = totalAmount - platformFee;
 
   const paymentIntent = await stripe.paymentIntents.create({
-    amount,
+    amount: totalAmount, // Use the calculated total amount
     currency,
     application_fee_amount: platformFee,
     metadata: {
@@ -162,6 +186,7 @@ export async function createPaymentIntent(params: {
       is_anonymous: isAnonymous.toString(),
       message: message || '',
       reward_tier_id: rewardTierId || '',
+      original_amount: amount.toString(), // Store the original requested amount
     },
     receipt_email: donorEmail,
     description: `Donation to campaign ${campaignId}`,

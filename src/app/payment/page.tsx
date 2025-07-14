@@ -203,14 +203,14 @@ export default function PaymentPage() {
   };
 
   const handleCustomAmountChange = (value: string) => {
-    const amount = parseInt(value) || 0;
+    const amount = parseFloat(value) || 0;
     setCustomAmount(amount);
     setSelectedTier(null);
     setPledgeData(prev => ({
       ...prev,
       tierId: undefined,
       tierTitle: undefined,
-      amount: amount,
+      amount: Math.round(amount * 100), // Convert to cents
       customAmount: amount,
     }));
   };
@@ -467,6 +467,28 @@ export default function PaymentPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4">Choose Your Support Level</h3>
                       
+                      {/* Preset Amounts */}
+                      <div className="mb-6">
+                        <Label className="text-base font-medium">Quick Amount</Label>
+                        <div className="grid grid-cols-3 gap-3 mt-2">
+                          {[5, 10, 25, 50, 100, 250].map((presetAmount) => (
+                            <Button
+                              key={presetAmount}
+                              type="button"
+                              variant="outline"
+                              className={`h-12 ${
+                                customAmount === presetAmount 
+                                  ? "border-green-500 bg-green-50 text-green-700" 
+                                  : "hover:border-green-300"
+                              }`}
+                              onClick={() => handleCustomAmountChange(presetAmount.toString())}
+                            >
+                              ${presetAmount}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Custom Amount */}
                       <div className="mb-6">
                         <Label className="text-base font-medium">Custom Amount</Label>
@@ -478,10 +500,11 @@ export default function PaymentPage() {
                             value={customAmount || ""}
                             onChange={(e) => handleCustomAmountChange(e.target.value)}
                             className="pl-10 h-12 text-lg"
-                            min="1"
+                            min="5"
+                            step="0.01"
                           />
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">Minimum $1</p>
+                        <p className="text-sm text-gray-600 mt-1">Minimum $5</p>
                       </div>
 
                       {/* Reward Tiers */}
