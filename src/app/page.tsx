@@ -61,7 +61,7 @@ function TypewriterText({ isMounted }: { isMounted: boolean }) {
             if (displayText.length < currentFullText.length) {
               setDisplayText(currentFullText.slice(0, displayText.length + 1));
             } else {
-              setTimeout(() => setIsDeleting(true), 2500);
+              setTimeout(() => setIsDeleting(true), 3000); // Increased pause time
             }
           } else {
             if (displayText.length > 0) {
@@ -72,7 +72,7 @@ function TypewriterText({ isMounted }: { isMounted: boolean }) {
             }
           }
         },
-        isDeleting ? 80 : 150,
+        isDeleting ? 100 : 200, // Slower typing for better performance
       );
 
       return () => {
@@ -101,113 +101,54 @@ function TypewriterText({ isMounted }: { isMounted: boolean }) {
   );
 }
 
-// Optimized floating particles component - reduced for better performance
+// Optimized floating particles component - further reduced for better performance
 function FloatingParticles({ isMounted }: { isMounted: boolean }) {
-  const [particles, setParticles] = useState<
-    Array<{
-      id: number;
-      left: number;
-      delay: number;
-      size: number;
-      color: string;
-      duration: number;
-      opacity: number;
-    }>
-  >([]);
-
-  useEffect(() => {
-    if (!isMounted || typeof window === "undefined") {
-      return;
-    }
-
-    try {
-      const colors = ["#0acc72", "#08b866", "#10b981", "#059669"];
-      // Reduced particles for better performance
-      const newParticles = Array.from({ length: 20 }, (_, i) => {
-        const seed = i * 123.456;
-        return {
-          id: i,
-          left: ((seed * 9301 + 49297) % 233280) / 2332.8,
-          delay: ((seed * 1103 + 4297) % 15000) / 1000,
-          size: 3 + ((seed * 7919 + 2971) % 4000) / 1000,
-          color: colors[Math.floor((seed * 5471 + 1789) % colors.length)],
-          duration: 15 + ((seed * 3571 + 8291) % 10000) / 1000,
-          opacity: 0.4 + ((seed * 2341 + 5678) % 3000) / 10000,
-        };
-      });
-      setParticles(newParticles);
-    } catch (error) {
-      console.warn("Particles initialization error:", error);
-    }
-  }, [isMounted]);
-
-  if (!isMounted || particles.length === 0) return null;
+  if (!isMounted) return null;
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map((particle) => (
-        <div
-          key={particle.id}
-          className="absolute rounded-full"
-          style={{
-            left: `${particle.left}%`,
-            animationDelay: `${particle.delay}s`,
-            width: `${particle.size}px`,
-            height: `${particle.size}px`,
-            background: particle.color,
-            opacity: particle.opacity,
-            animation: `elegant-float-up ${particle.duration}s ease-in-out infinite`,
-          }}
-        />
-      ))}
+      {/* Static particles for better performance */}
+      <div className="absolute top-20 left-10 w-2 h-2 bg-green-400 rounded-full opacity-30 animate-pulse" style={{ animationDelay: "0s" }} />
+      <div className="absolute top-40 right-20 w-1 h-1 bg-green-500 rounded-full opacity-40 animate-pulse" style={{ animationDelay: "1s" }} />
+      <div className="absolute top-60 left-1/4 w-1.5 h-1.5 bg-emerald-400 rounded-full opacity-35 animate-pulse" style={{ animationDelay: "2s" }} />
+      <div className="absolute top-80 right-1/3 w-1 h-1 bg-green-600 rounded-full opacity-25 animate-pulse" style={{ animationDelay: "3s" }} />
+      <div className="absolute top-32 left-1/2 w-1.5 h-1.5 bg-teal-400 rounded-full opacity-30 animate-pulse" style={{ animationDelay: "4s" }} />
     </div>
   );
 }
 
-// Optimized animated background component - reduced blur for better performance
+// Optimized animated background component - simplified for better performance
 function AnimatedBackground({ isMounted }: { isMounted: boolean }) {
   return (
     <>
       {/* Simple gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-white via-green-50/20 to-white" />
 
-      {/* Reduced blur gradient circles for better performance */}
-      <div className="absolute top-10 left-5 w-[400px] h-[400px] bg-gradient-to-r from-green-500/15 to-emerald-500/10 rounded-full blur-2xl animate-float" />
-      <div
-        className="absolute top-32 right-10 w-[350px] h-[350px] bg-gradient-to-l from-green-600/12 to-teal-600/8 rounded-full blur-2xl animate-float"
-        style={{ animationDelay: "2s" }}
-      />
-      <div
-        className="absolute bottom-10 left-1/3 w-[300px] h-[300px] bg-gradient-to-br from-green-400/10 to-green-700/6 rounded-full blur-2xl animate-float"
-        style={{ animationDelay: "4s" }}
-      />
-      <div
-        className="absolute top-1/2 right-1/4 w-[250px] h-[250px] bg-gradient-to-tl from-emerald-500/8 to-green-500/5 rounded-full blur-2xl animate-float"
-        style={{ animationDelay: "6s" }}
-      />
+      {/* Simplified gradient circles for better performance */}
+      <div className="absolute top-10 left-5 w-[300px] h-[300px] bg-gradient-to-r from-green-500/10 to-emerald-500/8 rounded-full blur-xl" />
+      <div className="absolute top-32 right-10 w-[250px] h-[250px] bg-gradient-to-l from-green-600/8 to-teal-600/6 rounded-full blur-xl" />
+      <div className="absolute bottom-10 left-1/3 w-[200px] h-[200px] bg-gradient-to-br from-green-400/6 to-green-700/4 rounded-full blur-xl" />
 
       {/* Floating Particles */}
       <FloatingParticles isMounted={isMounted} />
 
-      {/* Grid pattern overlay with premium feel */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2280%22%20height%3D%2280%22%20viewBox%3D%220%200%2080%2080%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%230acc72%22%20fill-opacity%3D%220.03%22%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2240%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-60" />
+      {/* Simplified grid pattern */}
+      <div className="absolute inset-0 opacity-30" style={{
+        backgroundImage: `radial-gradient(circle at 1px 1px, rgba(10, 204, 114, 0.1) 1px, transparent 0)`,
+        backgroundSize: '40px 40px'
+      }} />
     </>
   );
 }
 
-// 3D Interactive Dashboard component
+// Simplified Dashboard component for better performance
 function ThreeDDashboard({ isMounted }: { isMounted: boolean }) {
-  const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (!isMounted || typeof window === "undefined") {
       return;
     }
-
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -221,29 +162,21 @@ function ThreeDDashboard({ isMounted }: { isMounted: boolean }) {
       observer.observe(dashboardElement);
     }
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => {
-      window.removeEventListener("scroll", handleScroll);
       if (dashboardElement) {
         observer.unobserve(dashboardElement);
       }
     };
   }, [isMounted]);
 
-  const parallaxOffset = scrollY * 0.02;
-  const rotateX = isVisible ? Math.min(scrollY * 0.005, 3) : 0;
-  const rotateY = isVisible ? Math.sin(scrollY * 0.001) * 1 : 0;
-
   return (
     <div
       id="3d-dashboard"
-      className="relative max-w-7xl mx-auto mt-16 perspective-1000"
+      className="relative max-w-7xl mx-auto mt-16"
     >
       <div
         className="dashboard-3d transform-gpu transition-all duration-700 ease-out"
         style={{
-          transform: `translateY(${parallaxOffset}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
           transformStyle: "preserve-3d",
         }}
       >
@@ -298,7 +231,6 @@ function ThreeDDashboard({ isMounted }: { isMounted: boolean }) {
                 key={index}
                 className="stat-card-3d bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50 transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
                 style={{
-                  transform: `translateZ(${20 + index * 10}px)`,
                   animationDelay: `${index * 200}ms`,
                 }}
               >
@@ -318,9 +250,6 @@ function ThreeDDashboard({ isMounted }: { isMounted: boolean }) {
         {/* 3D Shadow */}
         <div
           className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/5 rounded-3xl blur-xl transform translate-y-8 -z-10"
-          style={{
-            transform: `translateY(20px) translateZ(-50px) rotateX(${rotateX * 0.5}deg)`,
-          }}
         />
       </div>
 
