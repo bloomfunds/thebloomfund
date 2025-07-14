@@ -190,7 +190,7 @@ export default function PaymentPage() {
 
       // Set custom amount if provided
       if (amount && !tierId) {
-        const amountValue = parseInt(amount);
+        const amountValue = parseFloat(amount);
         if (amountValue > 0) {
           setCustomAmount(amountValue);
           setPledgeData(prev => ({
@@ -577,13 +577,18 @@ export default function PaymentPage() {
                         <div className="relative mt-2">
                           <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                           <Input
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             placeholder="Enter amount"
                             value={customAmount || ""}
-                            onChange={(e) => handleCustomAmountChange(e.target.value)}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Only allow numbers, decimals, and backspace
+                              if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+                                handleCustomAmountChange(value);
+                              }
+                            }}
                             className="pl-10 h-12 text-lg"
-                            min="10"
-                            step="0.01"
                           />
                         </div>
                         <p className="text-sm text-gray-600 mt-1">Minimum $10</p>
@@ -609,7 +614,7 @@ export default function PaymentPage() {
                                   <div className="flex items-center justify-between mb-2">
                                     <h4 className="font-semibold text-lg">{tier.title}</h4>
                                     <div className="text-xl font-bold text-green-600">
-                                      ${(tier.amount / 100).toFixed(0)}
+                                      ${(tier.amount / 100).toFixed(2)}
                                     </div>
                                   </div>
                                   <p className="text-gray-600 text-sm">{tier.description}</p>
@@ -752,7 +757,7 @@ export default function PaymentPage() {
 
           {/* Right Column - Order Summary */}
           <div className="space-y-6">
-            <Card className="border-0 shadow-xl rounded-2xl sticky top-24">
+            <Card className="border-0 shadow-xl rounded-2xl sticky top-24 z-40">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="w-5 h-5 text-green-600" />
@@ -769,7 +774,7 @@ export default function PaymentPage() {
                     </div>
                     <p className="text-sm text-green-700 mb-2">{selectedTier.description}</p>
                     <div className="text-lg font-bold text-green-600">
-                      ${(selectedTier.amount / 100).toFixed(0)}
+                      ${(selectedTier.amount / 100).toFixed(2)}
                     </div>
                   </div>
                 ) : customAmount > 0 ? (
@@ -779,12 +784,32 @@ export default function PaymentPage() {
                       <span className="font-semibold text-blue-800">Custom Support</span>
                     </div>
                     <div className="text-lg font-bold text-blue-600">
-                      ${(customAmount / 100).toFixed(2)}
+                      ${customAmount.toFixed(2)}
                     </div>
                   </div>
                 ) : (
                   <div className="bg-gray-50 rounded-lg p-4 text-center">
                     <span className="text-gray-600">Select an amount or reward tier</span>
+                  </div>
+                )}
+
+                <Separator />
+
+                {/* Fee Breakdown */}
+                {(selectedTier || customAmount > 0) && (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Platform Fee (5% + $0.30):</span>
+                      <span className="font-medium">
+                        ${((selectedTier ? selectedTier.amount / 100 : customAmount) * 0.05 + 0.30).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between font-semibold">
+                      <span className="text-gray-900">Total Payment:</span>
+                      <span className="text-gray-900">
+                        ${((selectedTier ? selectedTier.amount / 100 : customAmount) + ((selectedTier ? selectedTier.amount / 100 : customAmount) * 0.05 + 0.30)).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 )}
 
@@ -812,14 +837,14 @@ export default function PaymentPage() {
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">Total Pledge</span>
                   <span className="text-xl font-bold text-green-600">
-                    ${((selectedTier?.amount || customAmount) / 100).toFixed(2)}
+                    ${((selectedTier ? selectedTier.amount / 100 : customAmount) + ((selectedTier ? selectedTier.amount / 100 : customAmount) * 0.05 + 0.30)).toFixed(2)}
                   </span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Security Badge */}
-            <Card className="border-0 shadow-lg rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white">
+            <Card className="border-0 shadow-lg rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white sticky top-96 z-30">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <Shield className="w-6 h-6" />
